@@ -6,11 +6,14 @@ import plotly.express as px
 import tempfile
 import os
 import mediapipe as mp
+import mediapipe.python.solutions.pose as mp_pose
+import mediapipe.python.solutions.drawing_utils as mp_drawing
+import mediapipe.python.solutions.drawing_styles as mp_drawing_styles
 
 # โหลด MediaPipe Solutions แบบมาตรฐาน
 mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
-mp_drawing_styles = mp.solutions.drawing_styles
+mp_drawing_styles = mp.solutions.drawing_stylesrawing_styles
 
 st.set_page_config(
     page_title="ระบบวิเคราะห์ท่าเดินจากวิดีโอ",
