@@ -1,157 +1,163 @@
 import streamlit as st
 import cv2
-import mediapipe as mp
 import numpy as np
 import pandas as pd
+import plotly.express as px
 import tempfile
-import plotly.graph_objects as go
+import os
 
-# 1. PAGE CONFIG & CUSTOM CSS
-st.set_page_config(page_title="Gait Analysis System", page_icon="🦵", layout="wide")
+# ==========================================
+# แก้ไขปัญหา AttributeError: mp.solutions.pose
+# ==========================================
+import mediapipe as mp
+try:
+    from mediapipe.python.solutions import pose as mp_pose
+    from mediapipe.python.solutions import drawing_utils as mp_drawing
+    from mediapipe.python.solutions import drawing_styles as mp_drawing_styles
+except (ImportError, ModuleNotFoundError):
+    mp_pose = mp.solutions.pose
+    mp_drawing = mp.solutions.drawing_utils
+    mp_drawing_styles = mp.solutions.drawing_styles
 
-st.markdown("""
-<style>
-    [data-testid="stMetric"] {
-        background-color: #F8F9FA;
-        padding: 15px 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        border: 1px solid #E9ECEF;
-    }
-    [data-testid="stMetricValue"] {
-        font-size: 28px !important;
-        font-weight: 700 !important;
-        color: #0F52BA !important;
-    }
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-</style>
-""", unsafe_allow_html=True)
+# ==========================================
+# ตั้งค่าหน้าเว็บ Streamlit
+# ==========================================
+st.set_page_config(
+    page_title="ระบบวิเคราะห์ท่าเดินจากวิดีโอ",
+    page_icon="🦶",
+    layout="wide"
+)
 
-st.title("🦵 ระบบวิเคราะห์ท่าเดินจากวิดีโอ (Video Gait Analysis System)")
+st.title("🦶 ระบบวิเคราะห์ท่าเดินจากวิดีโอ (Video Gait Analysis System)")
 st.caption("พัฒนาขึ้นเพื่อการวิเคราะห์มุมข้อต่อชีวกลศาสตร์ และดัชนีความสมมาตร (Symmetry Index)")
-st.divider()
 
-# 2. CORE MATH FUNCTIONS
+# ==========================================
+# ฟังก์ชันคำนวณมุมระหว่าง 3 จุด
+# ==========================================
 def calculate_angle(a, b, c):
-    a, b, c = np.array(a), np.array(b), np.array(c)
-    radians = np.arctan2(c[1] - b[1], c[0] - b[0]) - np.arctan2(a[1] - b[1], a[0] - b[0])
+    a = np.array(a) # จุดเริ่ม (เช่น สะโพก)
+    b = np.array(b) # จุดหมุน (เช่น เข่า)
+    c = np.array(c) # จุดปลาย (เช่น ข้อเท้า)
+    
+    radians = np.arctan2(c[1]-b[1], c[0]-b[0]) - np.arctan2(a[1]-b[1], a[0]-b[0])
     angle = np.abs(radians * 180.0 / np.pi)
-    return 360.0 - angle if angle > 180.0 else angle
-
-def calculate_symmetry_index(x_left, x_right):
-    if (x_left + x_right) == 0:
-        return 0.0
-    return (2 * abs(x_right - x_left) / (x_right + x_left)) * 100.0
-
-# 3. SIDEBAR
-st.sidebar.header("⚙️ การตั้งค่าระบบ")
-input_type = st.sidebar.radio("เลือกแหล่งข้อมูล:", ["📹 อัปโหลดไฟล์วิดีโอ (Video Upload)", "🎲 จำลองข้อมูลทดสอบ (Demo Data)"])
-window_size = st.sidebar.slider("ขนาด Window (Moving Average):", 1, 15, 5)
-
-# 4. DATA PROCESSING
-df_result = None
-
-if input_type == "📹 อัปโหลดไฟล์วิดีโอ (Video Upload)":
-    uploaded_video = st.file_uploader("อัปโหลดคลิปวิดีโอการเดิน (.mp4, .mov, .avi)", type=["mp4", "mov", "avi"])
     
-    if uploaded_video is not None:
-        tfile = tempfile.NamedTemporaryFile(delete=False)
-        tfile.write(uploaded_video.read())
-        cap = cv2.VideoCapture(tfile.name)
+    if angle > 180.0:
+        angle = 360.0 - angle
         
-        mp_pose = mp.solutions.pose
-        pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
-        
-        frames_data = []
-        frame_count = 0
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 100
-        
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
-            frame_count += 1
-            results = pose.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+    return angle
+
+# ==========================================
+# ส่วนการทำงานหลัก (Upload & Processing)
+# ==========================================
+uploaded_file = st.file_uploader("อัปโหลดคลิปวิดีโอการเดิน (.mp4, .mov, .avi)", type=["mp4", "mov", "avi"])
+
+if uploaded_file is not None:
+    # 1. สร้างไฟล์ชั่วคราวเพื่อให้อ่านวิดีโอผ่าน OpenCV ได้
+    tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
+    tfile.write(uploaded_file.read())
+    video_path = tfile.name
+
+    st.info("อัปโหลดวิดีโอเรียบร้อยแล้ว กำลังเริ่มประมวลผล...")
+
+    # 2. เปิดไฟล์วิดีโอด้วย OpenCV
+    cap = cv2.VideoCapture(video_path)
+    
+    frames_data = []
+    frame_count = 0
+
+    st_frame = st.empty()
+
+    # 3. เริ่มประมวลผลด้วย MediaPipe Pose
+    with st.spinner('กำลังวิเคราะห์ท่าเดินด้วย MediaPipe...'):
+        with mp_pose.Pose(
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5
+        ) as pose:
             
-            if results.pose_landmarks:
-                lm = results.pose_landmarks.landmark
-                l_hip, l_knee, l_ankle = [lm[23].x, lm[23].y], [lm[25].x, lm[25].y], [lm[27].x, lm[27].y]
-                r_hip, r_knee, r_ankle = [lm[24].x, lm[24].y], [lm[26].x, lm[26].y], [lm[28].x, lm[28].y]
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+
+                frame_count += 1
                 
-                frames_data.append({
-                    'Frame': frame_count,
-                    'Left_Knee': calculate_angle(l_hip, l_knee, l_ankle),
-                    'Right_Knee': calculate_angle(r_hip, r_knee, r_ankle)
-                })
-            
-            progress_bar.progress(min(frame_count / total_frames, 1.0))
-            status_text.text(f"กำลังประมวลผลวิดีโอ เฟรมที่: {frame_count}/{total_frames}")
-            
-        cap.release()
-        pose.close()
-        status_text.success("✅ ประมวลผลวิดีโอเสร็จสิ้น!")
+                # แปลง BGR เป็น RGB
+                image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                image.flags.writeable = False
+                
+                # ประมวลผลหาจุดโครงสร้างร่างกาย
+                results = pose.process(image)
+                
+                image.flags.writeable = True
+                
+                # คำนวณมุมหากพบโครงสร้างร่างกาย
+                if results.pose_landmarks:
+                    landmarks = results.pose_landmarks.landmark
+                    
+                    # ดึงพิกัดขาซ้าย
+                    l_hip = [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x, landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y]
+                    l_knee = [landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].x, landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].y]
+                    l_ankle = [landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].x, landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].y]
+                    
+                    # ดึงพิกัดขาขวา
+                    r_hip = [landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y]
+                    r_knee = [landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].y]
+                    r_ankle = [landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y]
+                    
+                    # คำนวณมุมเข่า
+                    left_knee_angle = calculate_angle(l_hip, l_knee, l_ankle)
+                    right_knee_angle = calculate_angle(r_hip, r_knee, r_ankle)
+                    
+                    # บันทึกข้อมูลเฟรม
+                    frames_data.append({
+                        'Frame': frame_count,
+                        'Left Knee Angle': left_knee_angle,
+                        'Right Knee Angle': right_knee_angle
+                    })
+
+                    # วาดเส้น Skeleton บนภาพ
+                    mp_drawing.draw_landmarks(
+                        image,
+                        results.pose_landmarks,
+                        mp_pose.POSE_CONNECTIONS,
+                        landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style()
+                    )
+
+                # แสดงวิดีโอแบบเรียลไทม์ (ข้ามเฟรมเพื่อความเร็วบน Cloud)
+                if frame_count % 2 == 0:
+                    st_frame.image(image, channels="RGB", use_container_width=True)
+
+    # ปิดและลบไฟล์ชั่วคราว
+    cap.release()
+    try:
+        os.remove(video_path)
+    except Exception:
+        pass
+
+    st.success("วิเคราะห์วิดีโอเสร็จสิ้น!")
+
+    # ==========================================
+    # 4. แสดงผลลัพธ์ข้อมูลและกราฟ
+    # ==========================================
+    if frames_data:
+        df = pd.DataFrame(frames_data)
         
-        if len(frames_data) > 0:
-            df_result = pd.DataFrame(frames_data)
-        else:
-            st.error("❌ ไม่พบโครงกระดูกมนุษย์ในวิดีโอ กรุณาตรวจสอบมุมกล้องและแสงสว่าง")
-            st.stop()
-    else:
-        st.info("👋 กรุณาอัปโหลดไฟล์วิดีโอ หรือเลือก 'จำลองข้อมูลทดสอบ' เพื่อดูตัวอย่าง")
-        st.stop()
-else:
-    num_frames = 100
-    time_steps = np.linspace(0, 4 * np.pi, num_frames)
-    np.random.seed(42)
-    df_result = pd.DataFrame({
-        'Frame': np.arange(1, num_frames + 1),
-        'Left_Knee': 35 + 25 * np.sin(time_steps) + np.random.normal(0, 2, num_frames),
-        'Right_Knee': 33 + 23 * np.sin(time_steps + 0.15) + np.random.normal(0, 2, num_frames)
-    })
+        st.subheader("📊 กราฟแสดงการเปลี่ยนแปลงมุมเข่า (Knee Joint Angle)")
+        fig = px.line(
+            df, 
+            x='Frame', 
+            y=['Left Knee Angle', 'Right Knee Angle'],
+            labels={'value': 'มุม (องศา)', 'variable': 'ข้าง'},
+            title="การเปรียบเทียบมุมเข่าซ้ายและขวาตลอดช่วงการเดิน"
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
-# 5. SMOOTHING & METRICS
-df_result['Left_Knee_Smooth'] = df_result['Left_Knee'].rolling(window=window_size, min_periods=1).mean()
-df_result['Right_Knee_Smooth'] = df_result['Right_Knee'].rolling(window=window_size, min_periods=1).mean()
-
-max_left = df_result['Left_Knee_Smooth'].max()
-max_right = df_result['Right_Knee_Smooth'].max()
-si_value = calculate_symmetry_index(max_left, max_right)
-
-# 6. DASHBOARD
-tab1, tab2, tab3 = st.tabs(["📊 สรุปผลการวิเคราะห์", "📖 สูตรคณิตศาสตร์ที่ใช้", "📥 ส่งออกรายงาน"])
-
-with tab1:
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("เข่าซ้ายงอสูงสุด", f"{max_left:.1f}°")
-    col2.metric("เข่าขวางอสูงสุด", f"{max_right:.1f}°")
-    col3.metric("Symmetry Index", f"{si_value:.2f}%")
-    
-    if si_value < 10.0:
-        col4.success("ปกติ (Symmetric)")
-    else:
-        col4.warning("ไม่สมมาตร (Asymmetric)")
-        
-    st.divider()
-    
-    # Plotly Interactive Graph
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df_result['Frame'], y=df_result['Left_Knee_Smooth'], mode='lines', name='เข่าซ้าย (Left Knee)', line=dict(color='#1E88E5', width=3)))
-    fig.add_trace(go.Scatter(x=df_result['Frame'], y=df_result['Right_Knee_Smooth'], mode='lines', name='เข่าขวา (Right Knee)', line=dict(color='#E53935', width=3, dash='dash')))
-    fig.update_layout(title="📈 กราฟเปรียบเทียบการเคลื่อนไหวข้อเข่า (Gait Cycle)", xaxis_title="เฟรมวิดีโอ (Frame)", yaxis_title="มุมงอข้อเข่า (องศา)", template="plotly_white", hovermode="x unified")
-    st.plotly_chart(fig, use_container_width=True)
-
-with tab2:
-    st.subheader("📐 ทฤษฎีคณิตศาสตร์เบื้องหลังการคำนวณ")
-    st.write("1. **ตรีโกณมิติ ($\operatorname{atan2}$)**")
-    st.latex(r"\theta = \left| \operatorname{atan2}(y_c - y_b, x_c - x_b) - \operatorname{atan2}(y_a - y_b, x_a - x_b) \right| \times \frac{180}{\pi}")
-    st.write("2. **Moving Average (SMA)**")
-    st.latex(r"SMA_t = \frac{1}{N} \sum_{i=0}^{N-1} x_{t-i}")
-    st.write("3. **Symmetry Index (SI)**")
-    st.latex(r"SI = \frac{2 \cdot |X_{\text{Right}} - X_{\text{Left}}|}{X_{\text{Right}} + X_{\text{Left}}} \times 100\%")
-
-with tab3:
-    st.dataframe(df_result, use_container_width=True)
-    st.download_button("📄 ดาวน์โหลดไฟล์ CSV", data=df_result.to_csv(index=False).encode('utf-8'), file_name="gait_analysis_results.csv", mime="text/csv")
+        # สรุปค่าสถิติ
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("มุมเข่าซ้ายเฉลี่ย", f"{df['Left Knee Angle'].mean():.2f}°")
+            st.metric("มุมเข่าซ้ายสูงสุด", f"{df['Left Knee Angle'].max():.2f}°")
+        with col2:
+            st.metric("มุมเข่าขวาเฉลี่ย", f"{df['Right Knee Angle'].mean():.2f}°")
+            st.metric("มุมเข่าขวาสูงสุด", f"{df['Right Knee Angle'].max():.2f}°")
