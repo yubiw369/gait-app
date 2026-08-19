@@ -1,6 +1,5 @@
 streamlit
-mediapipe==0.10.14
+mediapipe
 opencv-python-headless
-numpy<2.0.0
 pandas
 plotly
