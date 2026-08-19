@@ -5,8 +5,12 @@ import pandas as pd
 import plotly.express as px
 import tempfile
 import os
-import sys
+import mediapipe as mp
 
+# ดึง Solutions ตามมาตรฐาน
+mp_pose = mp.solutions.pose
+mp_drawing = mp.solutions.drawing_utils
+mp_drawing_styles = mp.solutions.drawing_styles
 # ล้างแคช MediaPipe ที่ค้างอยู่ในหน่วยความจำของ Python
 for mod in list(sys.modules.keys()):
     if mod.startswith('mediapipe'):
