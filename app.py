@@ -7,23 +7,12 @@ import tempfile
 import os
 import mediapipe as mp
 
-# ใช้การ Import แบบระบุ Path ตรงๆ เพื่อเลี่ยง Error AttributeError
-from mediapipe.python.solutions import pose as mp_pose
-from mediapipe.python.solutions import drawing_utils as mp_drawing
-from mediapipe.python.solutions import drawing_styles as mp_drawing_styles
-
 # ==========================================
-# แก้ไขปัญหา AttributeError: mp.solutions.pose
+# Import โมดูลของ MediaPipe โดยตรง เพื่อเลี่ยง AttributeError
 # ==========================================
-import mediapipe as mp
-try:
-    from mediapipe.python.solutions import pose as mp_pose
-    from mediapipe.python.solutions import drawing_utils as mp_drawing
-    from mediapipe.python.solutions import drawing_styles as mp_drawing_styles
-except (ImportError, ModuleNotFoundError):
-  
-    mp_drawing = mp.solutions.drawing_utils
-    mp_drawing_styles = mp.solutions.drawing_styles
+import mediapipe.python.solutions.pose as mp_pose
+import mediapipe.python.solutions.drawing_utils as mp_drawing
+import mediapipe.python.solutions.drawing_styles as mp_drawing_styles
 
 # ==========================================
 # ตั้งค่าหน้าเว็บ Streamlit
