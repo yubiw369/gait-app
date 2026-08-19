@@ -5,6 +5,12 @@ import pandas as pd
 import plotly.express as px
 import tempfile
 import os
+import mediapipe as mp
+
+# ใช้การ Import แบบระบุ Path ตรงๆ เพื่อเลี่ยง Error AttributeError
+from mediapipe.python.solutions import pose as mp_pose
+from mediapipe.python.solutions import drawing_utils as mp_drawing
+from mediapipe.python.solutions import drawing_styles as mp_drawing_styles
 
 # ==========================================
 # แก้ไขปัญหา AttributeError: mp.solutions.pose
@@ -15,7 +21,7 @@ try:
     from mediapipe.python.solutions import drawing_utils as mp_drawing
     from mediapipe.python.solutions import drawing_styles as mp_drawing_styles
 except (ImportError, ModuleNotFoundError):
-    mp_pose = mp.solutions.pose
+  
     mp_drawing = mp.solutions.drawing_utils
     mp_drawing_styles = mp.solutions.drawing_styles
 
