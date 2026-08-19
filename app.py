@@ -8,11 +8,10 @@ import os
 import mediapipe as mp
 
 # ==========================================
-# Import โมดูลของ MediaPipe โดยตรง เพื่อเลี่ยง AttributeError
-# ==========================================
-import mediapipe.python.solutions.pose as mp_pose
-import mediapipe.python.solutions.drawing_utils as mp_drawing
-import mediapipe.python.solutions.drawing_styles as mp_drawing_styles
+import mediapipe as mp
+from mediapipe.solutions import pose as mp_pose
+from mediapipe.solutions import drawing_utils as mp_drawing
+from mediapipe.solutions import drawing_styles as mp_drawing_styles
 
 # ==========================================
 # ตั้งค่าหน้าเว็บ Streamlit
