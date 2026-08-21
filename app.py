@@ -41,7 +41,7 @@ st.markdown(
     /* ---------- App background ---------- */
     .stApp {
         background:
-            radial-gradient(circle at top, #10233a 0%, #071421 42%, #040b13 100%);
+            radial-gradient(circle at top, #1a4164 0%, #0e2b46 42%, #081a2c 100%);
         color: #f8fafc;
     }
 
@@ -66,7 +66,7 @@ st.markdown(
         gap: 24px;
         padding: 16px 24px;
         margin-bottom: 24px;
-        background: rgba(5, 17, 30, 0.88);
+        background: rgba(11, 35, 57, 0.90);
         border: 1px solid rgba(125, 211, 252, 0.12);
         border-radius: 14px;
         box-shadow: 0 10px 35px rgba(0,0,0,0.22);
@@ -130,8 +130,8 @@ st.markdown(
     .med-card {
         background: linear-gradient(
             145deg,
-            rgba(20, 46, 72, 0.96),
-            rgba(7, 23, 39, 0.98)
+            rgba(31, 73, 108, 0.96),
+            rgba(15, 44, 70, 0.98)
         );
         border: 1px solid rgba(103, 232, 249, 0.16);
         border-radius: 14px;
@@ -225,7 +225,7 @@ st.markdown(
 
     /* ---------- Upload box ---------- */
     [data-testid="stFileUploader"] {
-        background: rgba(10, 31, 50, 0.88);
+        background: rgba(18, 54, 84, 0.92);
         border: 1px dashed rgba(34,211,238,0.48);
         border-radius: 14px;
         padding: 16px;
@@ -279,12 +279,151 @@ st.markdown(
         border-top: 1px solid rgba(148,163,184,0.12);
     }
 
+
+    /* ---------- Hero / illustrative visuals ---------- */
+    .hero-panel {
+        position: relative;
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: 1.45fr 1fr;
+        align-items: center;
+        gap: 24px;
+        min-height: 225px;
+        padding: 30px 34px;
+        margin-bottom: 22px;
+        border-radius: 20px;
+        background:
+            linear-gradient(120deg, rgba(28, 79, 118, 0.97), rgba(18, 58, 91, 0.95));
+        border: 1px solid rgba(103, 232, 249, 0.28);
+        box-shadow:
+            0 16px 42px rgba(0,0,0,0.22),
+            inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+
+    .hero-panel:before {
+        content: "";
+        position: absolute;
+        width: 360px;
+        height: 360px;
+        right: -120px;
+        top: -150px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(34,211,238,0.24), rgba(34,211,238,0));
+    }
+
+    .hero-kicker {
+        color: #67e8f9;
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 1.3px;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+    }
+
+    .hero-title {
+        color: #ffffff;
+        font-size: clamp(28px, 3vw, 42px);
+        font-weight: 850;
+        line-height: 1.1;
+        margin-bottom: 12px;
+    }
+
+    .hero-copy {
+        color: #cbd5e1;
+        font-size: 15px;
+        line-height: 1.7;
+        max-width: 720px;
+    }
+
+    .hero-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 16px;
+    }
+
+    .hero-tag {
+        padding: 7px 11px;
+        border-radius: 999px;
+        background: rgba(103,232,249,0.10);
+        border: 1px solid rgba(103,232,249,0.22);
+        color: #dffaff;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .hero-art {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 180px;
+        filter: drop-shadow(0 0 18px rgba(34,211,238,0.20));
+    }
+
+    .visual-card {
+        padding: 16px;
+        border-radius: 16px;
+        background: linear-gradient(145deg, rgba(37,82,119,0.82), rgba(17,51,80,0.90));
+        border: 1px solid rgba(125,211,252,0.24);
+        box-shadow: 0 10px 28px rgba(0,0,0,0.20);
+        margin-bottom: 14px;
+    }
+
+    .mini-visual-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin: 8px 0 20px;
+    }
+
+    .mini-visual {
+        min-height: 100px;
+        border-radius: 14px;
+        padding: 14px;
+        background: linear-gradient(145deg, rgba(34,77,112,0.92), rgba(20,58,91,0.94));
+        border: 1px solid rgba(103,232,249,0.18);
+        text-align: center;
+    }
+
+    .mini-visual .icon {
+        font-size: 31px;
+        margin-bottom: 6px;
+    }
+
+    .mini-visual .label {
+        color: #dbeafe;
+        font-weight: 750;
+        font-size: 13px;
+    }
+
+    .mini-visual .caption {
+        color: #94a3b8;
+        font-size: 11px;
+        margin-top: 3px;
+    }
+
+    /* Brighter upload and tabs */
+    [data-testid="stFileUploader"] section {
+        background: rgba(34, 76, 112, 0.56);
+        border-radius: 12px;
+    }
+
+    div[data-baseweb="tab-list"] {
+        gap: 8px;
+        background: rgba(25, 65, 99, 0.55);
+        padding: 6px;
+        border-radius: 12px;
+    }
+
     /* ---------- Responsive ---------- */
     @media (max-width: 900px) {
         .nav-items { display: none; }
         .brand { font-size: 19px; }
         .top-nav { padding: 13px 16px; }
         .score-number { font-size: 44px; }
+        .hero-panel { grid-template-columns: 1fr; padding: 24px; }
+        .hero-art { min-height: 140px; }
+        .mini-visual-row { grid-template-columns: 1fr; }
     }
     </style>
     """,
@@ -303,30 +442,126 @@ st.markdown(
             <span class="brand-icon">▣</span>
             Medical Gait AI
         </div>
+
+        <div class="nav-items">
+            <span class="nav-active">Dashboard</span>
+            <span>Patient Data</span>
+            <span>Reports</span>
+            <span>Settings</span>
+        </div>
+
+        <div class="nav-user">👤</div>
+    </div>
     """,
     unsafe_allow_html=True
 )
 
 st.markdown(
-    '<div class="section-title">Video Gait Analysis Dashboard</div>',
+    """
+    <div class="hero-panel">
+        <div>
+            <div class="hero-kicker">AI-ASSISTED MOVEMENT ANALYSIS</div>
+            <div class="hero-title">Video Gait Analysis Dashboard</div>
+            <div class="hero-copy">
+                วิเคราะห์การเคลื่อนไหวจากวิดีโอด้วย MediaPipe Pose
+                พร้อมสรุปมุมข้อต่อ ความสมมาตร ROM และ Gait Screening
+                ในรูปแบบแดชบอร์ดที่อ่านผลได้ง่าย
+            </div>
+            <div class="hero-tags">
+                <span class="hero-tag">Pose Tracking</span>
+                <span class="hero-tag">Hip / Knee / Ankle</span>
+                <span class="hero-tag">Symmetry Index</span>
+                <span class="hero-tag">ROM Analysis</span>
+            </div>
+        </div>
+
+        <div class="hero-art" aria-label="ภาพประกอบระบบติดตามท่าเดิน">
+            <svg width="280" height="190" viewBox="0 0 280 190"
+                 xmlns="http://www.w3.org/2000/svg" role="img">
+                <defs>
+                    <linearGradient id="limb" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#e0f2fe"/>
+                        <stop offset="100%" stop-color="#93c5fd"/>
+                    </linearGradient>
+                    <filter id="glow">
+                        <feGaussianBlur stdDeviation="3.2" result="blur"/>
+                        <feMerge>
+                            <feMergeNode in="blur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                </defs>
+
+                <circle cx="134" cy="28" r="16" fill="#eaf8ff"/>
+                <g stroke="url(#limb)" stroke-width="7" stroke-linecap="round">
+                    <line x1="134" y1="47" x2="131" y2="88"/>
+                    <line x1="131" y1="62" x2="96" y2="76"/>
+                    <line x1="96" y1="76" x2="76" y2="108"/>
+                    <line x1="131" y1="62" x2="166" y2="78"/>
+                    <line x1="166" y1="78" x2="200" y2="92"/>
+                    <line x1="131" y1="88" x2="105" y2="125"/>
+                    <line x1="105" y1="125" x2="72" y2="160"/>
+                    <line x1="131" y1="88" x2="160" y2="125"/>
+                    <line x1="160" y1="125" x2="180" y2="164"/>
+                </g>
+
+                <g filter="url(#glow)">
+                    <circle cx="131" cy="62" r="8" fill="#22d3ee"/>
+                    <circle cx="96" cy="76" r="7" fill="#67e8f9"/>
+                    <circle cx="76" cy="108" r="7" fill="#22d3ee"/>
+                    <circle cx="166" cy="78" r="7" fill="#c084fc"/>
+                    <circle cx="200" cy="92" r="7" fill="#a855f7"/>
+                    <circle cx="131" cy="88" r="9" fill="#67e8f9"/>
+                    <circle cx="105" cy="125" r="8" fill="#22d3ee"/>
+                    <circle cx="72" cy="160" r="8" fill="#67e8f9"/>
+                    <circle cx="160" cy="125" r="8" fill="#c084fc"/>
+                    <circle cx="180" cy="164" r="8" fill="#a855f7"/>
+                </g>
+
+                <path d="M18 145 C55 125, 63 158, 98 142 S150 118, 194 136 S238 148, 266 118"
+                      fill="none" stroke="#22d3ee" stroke-width="2.5" opacity="0.75"/>
+                <path d="M18 155 H265" stroke="#7dd3fc" stroke-width="1" opacity="0.18"/>
+                <circle cx="232" cy="42" r="22" fill="none" stroke="#67e8f9" stroke-width="2" opacity="0.55"/>
+                <circle cx="232" cy="42" r="9" fill="#22d3ee" opacity="0.65"/>
+            </svg>
+        </div>
+    </div>
+    """,
     unsafe_allow_html=True
 )
+
 st.markdown(
-    '<div class="section-subtitle">'
-    'วิเคราะห์มุมข้อต่อ ความสมมาตร ROM และ Gait Screening จากวิดีโอ'
-    '</div>',
+    """
+    <div class="mini-visual-row">
+        <div class="mini-visual">
+            <div class="icon">🧍</div>
+            <div class="label">Pose Detection</div>
+            <div class="caption">ตรวจจับโครงร่างจากวิดีโอ</div>
+        </div>
+        <div class="mini-visual">
+            <div class="icon">📐</div>
+            <div class="label">Joint Angles</div>
+            <div class="caption">Hip · Knee · Ankle</div>
+        </div>
+        <div class="mini-visual">
+            <div class="icon">⚖️</div>
+            <div class="label">Symmetry</div>
+            <div class="caption">เปรียบเทียบซ้าย–ขวา</div>
+        </div>
+    </div>
+    """,
     unsafe_allow_html=True
 )
 
 
 # =========================================================
-# 5. ฟังก์ชันคำนวณมุมข้อต่อ
+# 5. ฟังก์ชันคำนวณมุมและแปลงเป็นมุมเชิงคลินิก
 # =========================================================
 
 def calculate_angle(a, b, c):
     """
-    คำนวณมุม ABC จากจุด A, B และ C
-    โดยใช้พิกัด 2D (x, y)
+    คำนวณมุม ABC แบบเรขาคณิต 2D (0-180 องศา)
+    จากจุด A-B-C โดย B เป็นจุดยอดมุม
     """
 
     a = np.array(a, dtype=np.float64)
@@ -334,20 +569,11 @@ def calculate_angle(a, b, c):
     c = np.array(c, dtype=np.float64)
 
     radians = (
-        np.arctan2(
-            c[1] - b[1],
-            c[0] - b[0]
-        )
-        -
-        np.arctan2(
-            a[1] - b[1],
-            a[0] - b[0]
-        )
+        np.arctan2(c[1] - b[1], c[0] - b[0])
+        - np.arctan2(a[1] - b[1], a[0] - b[0])
     )
 
-    angle = np.abs(
-        radians * 180.0 / np.pi
-    )
+    angle = np.abs(radians * 180.0 / np.pi)
 
     if angle > 180.0:
         angle = 360.0 - angle
@@ -355,317 +581,999 @@ def calculate_angle(a, b, c):
     return float(angle)
 
 
+def clinical_knee_flexion(hip, knee, ankle):
+    """
+    MediaPipe geometric knee angle:
+        fully extended ~ 180°
+    Clinical knee flexion:
+        fully extended ~ 0°
+
+    ดังนั้น:
+        Knee Flexion = 180 - geometric angle
+    """
+
+    raw_angle = calculate_angle(
+        hip,
+        knee,
+        ankle
+    )
+
+    return float(
+        180.0 - raw_angle
+    )
+
+
+def clinical_ankle_dorsiflexion(knee, ankle, foot):
+    """
+    ในภาพด้านข้าง:
+        tibia-foot geometric angle ~ 90° ที่ neutral
+
+    กำหนด:
+        dorsiflexion  = ค่าบวก
+        plantarflexion = ค่าลบ
+
+    ดังนั้น:
+        Ankle DF = 90 - geometric angle
+    """
+
+    raw_angle = calculate_angle(
+        knee,
+        ankle,
+        foot
+    )
+
+    return float(
+        90.0 - raw_angle
+    )
+
+
+def clinical_hip_flexion(
+    shoulder,
+    hip,
+    knee,
+    direction_sign
+):
+    """
+    แปลง geometric hip angle ให้เป็นมุมเชิงคลินิกอย่างง่าย
+    สำหรับวิดีโอด้านข้าง (sagittal view)
+
+    flexion  = ค่าบวก
+    extension = ค่าลบ
+
+    magnitude = 180 - geometric angle
+
+    เครื่องหมายถูกกำหนดจากตำแหน่งเข่าเทียบสะโพก
+    ตามทิศทางการเดินที่ผู้ใช้เลือก
+    """
+
+    raw_angle = calculate_angle(
+        shoulder,
+        hip,
+        knee
+    )
+
+    magnitude = max(
+        0.0,
+        180.0 - raw_angle
+    )
+
+    forward_position = (
+        knee[0] - hip[0]
+    ) * direction_sign
+
+    if forward_position >= 0:
+        return float(magnitude)
+
+    return float(-magnitude)
+
+
 # =========================================================
-# 6. ฟังก์ชันคำนวณ Symmetry Index
+# 6. Symmetry Index / ROM
 # =========================================================
 
 def calculate_symmetry_index(left_val, right_val):
+    """
+    Symmetry Index (%)
+
+        |L - R|
+    ---------------- x 100
+     0.5(|L|+|R|)
+
+    ใช้กับค่าที่เป็น scalar เช่น ROM หรือ peak
+    """
 
     denominator = 0.5 * (
         abs(left_val) + abs(right_val)
     )
 
-    if denominator == 0:
-        return 0.0
-
-    return (
-        abs(left_val - right_val)
-        / denominator
-    ) * 100
-
-
-# =========================================================
-# 7. ฟังก์ชันคำนวณ ROM
-# =========================================================
-
-def calculate_rom(series):
-
-    if series.empty:
+    if denominator < 1e-9:
         return 0.0
 
     return float(
-        series.max() - series.min()
+        (
+            abs(left_val - right_val)
+            / denominator
+        ) * 100.0
+    )
+
+
+def calculate_rom(series):
+    """
+    Range of Motion = maximum - minimum
+    """
+
+    if len(series) == 0:
+        return 0.0
+
+    return float(
+        np.nanmax(series)
+        - np.nanmin(series)
+    )
+
+
+def calculate_curve_symmetry_index(
+    left_curve,
+    right_curve
+):
+    """
+    Symmetry Index สำหรับเส้นโค้ง gait cycle ที่ normalize แล้ว
+
+    numerator   = mean(|L-R|)
+    denominator = 0.5 * [mean(|L|) + mean(|R|)]
+
+    ค่านี้ยิ่งต่ำยิ่งมีรูปแบบซ้าย-ขวาใกล้กัน
+    """
+
+    left_curve = np.asarray(
+        left_curve,
+        dtype=float
+    )
+
+    right_curve = np.asarray(
+        right_curve,
+        dtype=float
+    )
+
+    valid = (
+        np.isfinite(left_curve)
+        & np.isfinite(right_curve)
+    )
+
+    if valid.sum() < 5:
+        return np.nan
+
+    left_curve = left_curve[valid]
+    right_curve = right_curve[valid]
+
+    denominator = 0.5 * (
+        np.mean(np.abs(left_curve))
+        + np.mean(np.abs(right_curve))
+    )
+
+    if denominator < 1e-9:
+        return 0.0
+
+    return float(
+        np.mean(
+            np.abs(
+                left_curve - right_curve
+            )
+        )
+        / denominator
+        * 100.0
     )
 
 
 # =========================================================
-# 8. ฟังก์ชันประเมิน Gait Screening
+# 7. Gait-cycle detection
 # =========================================================
 
-def calculate_gait_screening(df):
+GAIT_PHASES = [
+    ("Initial Contact", 0, 2),
+    ("Loading Response", 0, 10),
+    ("Mid Stance", 10, 30),
+    ("Terminal Stance", 30, 50),
+    ("Pre-Swing", 50, 60),
+    ("Initial Swing", 60, 73),
+    ("Mid Swing", 73, 87),
+    ("Terminal Swing", 87, 100),
+]
+
+
+def smooth_series(values, window=5):
     """
-    ประเมินความสมมาตรของการเคลื่อนไหวเบื้องต้น
-
-    ใช้สำหรับ Gait Screening เท่านั้น
-    ไม่ใช่การวินิจฉัยทางการแพทย์
+    Moving average แบบง่าย โดยไม่ต้องใช้ scipy
     """
 
-    # -----------------------------------------------------
-    # ตรวจสอบข้อมูล
-    # -----------------------------------------------------
+    values = np.asarray(
+        values,
+        dtype=float
+    )
 
-    required_columns = [
-        "Left Knee Angle",
-        "Right Knee Angle",
-        "Left Hip Angle",
-        "Right Hip Angle",
-        "Left Ankle Angle",
-        "Right Ankle Angle"
-    ]
+    if len(values) < 3:
+        return values.copy()
 
-    for column in required_columns:
+    window = int(
+        max(
+            3,
+            min(
+                window,
+                len(values)
+            )
+        )
+    )
 
-        if column not in df.columns:
-            raise ValueError(
-                f"ไม่พบข้อมูล {column}"
+    if window % 2 == 0:
+        window += 1
+
+    pad = window // 2
+
+    padded = np.pad(
+        values,
+        (pad, pad),
+        mode="edge"
+    )
+
+    kernel = np.ones(window) / window
+
+    return np.convolve(
+        padded,
+        kernel,
+        mode="valid"
+    )
+
+
+def detect_heel_strikes(
+    forward_heel_position,
+    fps,
+    min_interval_s=0.55,
+    prominence=0.015
+):
+    """
+    ตรวจ heel-strike แบบ heuristic จากตำแหน่งส้นเท้า
+    ที่อยู่ด้านหน้าสุดเมื่อเทียบกับ pelvis
+
+    เหมาะกับ:
+    - วิดีโอด้านข้าง
+    - ผู้เดินผ่านกล้องหรือ treadmill ที่เห็นเท้าชัด
+
+    ไม่ใช่ force-plate event detection
+    """
+
+    values = np.asarray(
+        forward_heel_position,
+        dtype=float
+    )
+
+    if len(values) < 10:
+        return []
+
+    smooth_window = max(
+        3,
+        int(
+            round(
+                fps * 0.08
+            )
+        )
+    )
+
+    smoothed = smooth_series(
+        values,
+        smooth_window
+    )
+
+    min_distance = max(
+        3,
+        int(
+            round(
+                fps * min_interval_s
+            )
+        )
+    )
+
+    candidates = []
+
+    for i in range(
+        1,
+        len(smoothed) - 1
+    ):
+
+        if not (
+            smoothed[i] >= smoothed[i - 1]
+            and smoothed[i] > smoothed[i + 1]
+        ):
+            continue
+
+        left = max(
+            0,
+            i - min_distance // 2
+        )
+
+        right = min(
+            len(smoothed),
+            i + min_distance // 2 + 1
+        )
+
+        local_min = np.nanmin(
+            smoothed[left:right]
+        )
+
+        if (
+            smoothed[i] - local_min
+        ) >= prominence:
+
+            candidates.append(i)
+
+    if not candidates:
+        return []
+
+    selected = []
+
+    for idx in candidates:
+
+        if not selected:
+
+            selected.append(idx)
+            continue
+
+        if (
+            idx - selected[-1]
+        ) >= min_distance:
+
+            selected.append(idx)
+
+        elif (
+            smoothed[idx]
+            > smoothed[selected[-1]]
+        ):
+
+            selected[-1] = idx
+
+    return selected
+
+
+def normalize_cycles(
+    df,
+    strike_indices,
+    joint_columns
+):
+    """
+    Normalize รอบการเดินจาก heel strike หนึ่ง
+    ไป heel strike ครั้งถัดไปของเท้าข้างเดียว
+    เป็น 0-100% ด้วย interpolation 101 จุด
+    """
+
+    if len(strike_indices) < 2:
+        return None
+
+    percent = np.linspace(
+        0,
+        100,
+        101
+    )
+
+    normalized = {
+        column: []
+        for column in joint_columns
+    }
+
+    cycle_durations = []
+
+    valid_cycle_count = 0
+
+    for start, end in zip(
+        strike_indices[:-1],
+        strike_indices[1:]
+    ):
+
+        if end - start < 8:
+            continue
+
+        segment = df.iloc[
+            start:end + 1
+        ]
+
+        segment_time = (
+            segment["Time (s)"].to_numpy(
+                dtype=float
+            )
+        )
+
+        duration = (
+            segment_time[-1]
+            - segment_time[0]
+        )
+
+        if duration <= 0:
+            continue
+
+        x_old = np.linspace(
+            0,
+            100,
+            len(segment)
+        )
+
+        cycle_ok = True
+
+        temp = {}
+
+        for column in joint_columns:
+
+            y = segment[
+                column
+            ].to_numpy(
+                dtype=float
             )
 
-    if df.empty:
-        raise ValueError(
-            "ไม่มีข้อมูลสำหรับการประเมิน"
+            valid = np.isfinite(y)
+
+            if valid.sum() < 5:
+                cycle_ok = False
+                break
+
+            temp[column] = np.interp(
+                percent,
+                x_old[valid],
+                y[valid]
+            )
+
+        if not cycle_ok:
+            continue
+
+        for column in joint_columns:
+            normalized[column].append(
+                temp[column]
+            )
+
+        cycle_durations.append(
+            duration
         )
 
+        valid_cycle_count += 1
 
-    # =====================================================
-    # ค่าเฉลี่ยมุมแต่ละข้าง
-    # =====================================================
+    if valid_cycle_count == 0:
+        return None
 
-    left_knee = df[
-        "Left Knee Angle"
-    ].mean()
+    mean_curves = {}
 
-    right_knee = df[
-        "Right Knee Angle"
-    ].mean()
+    for column in joint_columns:
 
-    left_hip = df[
-        "Left Hip Angle"
-    ].mean()
-
-    right_hip = df[
-        "Right Hip Angle"
-    ].mean()
-
-    left_ankle = df[
-        "Left Ankle Angle"
-    ].mean()
-
-    right_ankle = df[
-        "Right Ankle Angle"
-    ].mean()
-
-
-    # =====================================================
-    # Symmetry Index
-    # =====================================================
-
-    knee_si = calculate_symmetry_index(
-        left_knee,
-        right_knee
-    )
-
-    hip_si = calculate_symmetry_index(
-        left_hip,
-        right_hip
-    )
-
-    ankle_si = calculate_symmetry_index(
-        left_ankle,
-        right_ankle
-    )
-
-
-    # =====================================================
-    # Overall SI
-    # =====================================================
-
-    overall_si = float(
-        np.mean([
-            knee_si,
-            hip_si,
-            ankle_si
-        ])
-    )
-
-
-    # =====================================================
-    # ROM
-    # =====================================================
-
-    left_knee_rom = calculate_rom(
-        df["Left Knee Angle"]
-    )
-
-    right_knee_rom = calculate_rom(
-        df["Right Knee Angle"]
-    )
-
-    left_hip_rom = calculate_rom(
-        df["Left Hip Angle"]
-    )
-
-    right_hip_rom = calculate_rom(
-        df["Right Hip Angle"]
-    )
-
-    left_ankle_rom = calculate_rom(
-        df["Left Ankle Angle"]
-    )
-
-    right_ankle_rom = calculate_rom(
-        df["Right Ankle Angle"]
-    )
-
-
-    # =====================================================
-    # ROM Symmetry Index
-    # =====================================================
-
-    knee_rom_si = calculate_symmetry_index(
-        left_knee_rom,
-        right_knee_rom
-    )
-
-    hip_rom_si = calculate_symmetry_index(
-        left_hip_rom,
-        right_hip_rom
-    )
-
-    ankle_rom_si = calculate_symmetry_index(
-        left_ankle_rom,
-        right_ankle_rom
-    )
-
-
-    # =====================================================
-    # Overall ROM SI
-    # =====================================================
-
-    overall_rom_si = float(
-        np.mean([
-            knee_rom_si,
-            hip_rom_si,
-            ankle_rom_si
-        ])
-    )
-
-
-    # =====================================================
-    # Gait Screening Score
-    #
-    # SI ต่ำ = สมมาตรมาก
-    # SI สูง = แตกต่างมาก
-    #
-    # หมายเหตุ:
-    # เป็นคะแนน screening ที่ออกแบบในระบบ
-    # ไม่ใช่คะแนนมาตรฐานทางคลินิก
-    # =====================================================
-
-    score = max(
-        0.0,
-        min(
-            100.0,
-            100.0 - (overall_si * 2.0)
+        mean_curves[column] = np.mean(
+            np.vstack(
+                normalized[column]
+            ),
+            axis=0
         )
-    )
-
-
-    # =====================================================
-    # ประเมินระดับ
-    # =====================================================
-
-    if overall_si < 5:
-
-        status = "🟢 ปกติ"
-
-        description = (
-            "จากตัวชี้วัดที่ระบบวิเคราะห์ "
-            "พบความแตกต่างระหว่างด้านซ้ายและขวา "
-            "ในระดับต่ำ และมีความสมมาตรโดยรวมค่อนข้างดี"
-        )
-
-        recommendation = (
-            "สามารถใช้ผลนี้เป็นข้อมูลคัดกรองเบื้องต้น "
-            "และควรพิจารณาร่วมกับลักษณะการเดินจริง "
-            "และข้อมูลอื่นที่เกี่ยวข้อง"
-        )
-
-        level = "normal"
-
-
-    elif overall_si < 10:
-
-        status = "🟡 ควรประเมินเพิ่มเติม"
-
-        description = (
-            "พบความแตกต่างระหว่างด้านซ้ายและขวา "
-            "ในระดับปานกลางจากตัวชี้วัดที่ระบบใช้"
-        )
-
-        recommendation = (
-            "ควรตรวจสอบวิดีโอเพิ่มเติม เช่น "
-            "รูปแบบการลงเท้า การก้าว ความยาวก้าว "
-            "การเคลื่อนไหวของเข่า สะโพก และข้อเท้า "
-            "รวมถึงพิจารณาคุณภาพและมุมของกล้อง"
-        )
-
-        level = "warning"
-
-
-    else:
-
-        status = "🔴 พบความแตกต่างมาก"
-
-        description = (
-            "พบความแตกต่างระหว่างด้านซ้ายและขวา "
-            "ค่อนข้างมากจากตัวชี้วัดที่ใช้ในการคัดกรอง"
-        )
-
-        recommendation = (
-            "ควรพิจารณาประเมินการเดินเพิ่มเติมโดยผู้เชี่ยวชาญ "
-            "โดยเฉพาะหากมีอาการปวด อ่อนแรง "
-            "เดินผิดปกติ หรือมีปัญหาด้านการทรงตัวร่วมด้วย"
-        )
-
-        level = "danger"
-
-
-    # =====================================================
-    # คืนค่าผลทั้งหมด
-    # =====================================================
 
     return {
+        "percent": percent,
+        "mean_curves": mean_curves,
+        "cycle_count": valid_cycle_count,
+        "cycle_durations": cycle_durations,
+        "mean_cycle_duration": float(
+            np.mean(
+                cycle_durations
+            )
+        )
+    }
 
-        "status": status,
 
-        "level": level,
+def build_gait_cycle_analysis(
+    df,
+    fps
+):
+    """
+    สร้าง gait cycle แยกซ้าย/ขวา
+    แล้ว normalize เป็น 0-100%
+    """
 
-        "score": score,
+    required = [
+        "Left Heel Forward",
+        "Right Heel Forward",
+        "Left Hip Flexion",
+        "Right Hip Flexion",
+        "Left Knee Flexion",
+        "Right Knee Flexion",
+        "Left Ankle DF",
+        "Right Ankle DF",
+    ]
 
-        "overall_si": overall_si,
+    if any(
+        column not in df.columns
+        for column in required
+    ):
+        return None
 
-        "knee_si": knee_si,
+    left_strikes = detect_heel_strikes(
+        df[
+            "Left Heel Forward"
+        ].to_numpy(),
+        fps
+    )
 
-        "hip_si": hip_si,
+    right_strikes = detect_heel_strikes(
+        df[
+            "Right Heel Forward"
+        ].to_numpy(),
+        fps
+    )
 
-        "ankle_si": ankle_si,
+    left_cycle = normalize_cycles(
+        df,
+        left_strikes,
+        [
+            "Left Hip Flexion",
+            "Left Knee Flexion",
+            "Left Ankle DF",
+        ]
+    )
 
-        "overall_rom_si": overall_rom_si,
+    right_cycle = normalize_cycles(
+        df,
+        right_strikes,
+        [
+            "Right Hip Flexion",
+            "Right Knee Flexion",
+            "Right Ankle DF",
+        ]
+    )
 
-        "knee_rom_si": knee_rom_si,
+    if (
+        left_cycle is None
+        or right_cycle is None
+    ):
+        return {
+            "available": False,
+            "left_strikes": left_strikes,
+            "right_strikes": right_strikes,
+            "left_cycle": left_cycle,
+            "right_cycle": right_cycle,
+        }
 
-        "hip_rom_si": hip_rom_si,
-
-        "ankle_rom_si": ankle_rom_si,
-
-        "description": description,
-
-        "recommendation": recommendation
+    return {
+        "available": True,
+        "left_strikes": left_strikes,
+        "right_strikes": right_strikes,
+        "left_cycle": left_cycle,
+        "right_cycle": right_cycle,
     }
 
 
 # =========================================================
-# 9. Sidebar
+# 8. Phase metrics / reference bands
+# =========================================================
+
+def curve_value_at(
+    percent,
+    curve,
+    target_percent
+):
+
+    return float(
+        np.interp(
+            target_percent,
+            percent,
+            curve
+        )
+    )
+
+
+def curve_range_metric(
+    percent,
+    curve,
+    start_percent,
+    end_percent,
+    mode="mean"
+):
+
+    percent = np.asarray(
+        percent
+    )
+
+    curve = np.asarray(
+        curve
+    )
+
+    mask = (
+        (percent >= start_percent)
+        & (percent <= end_percent)
+    )
+
+    values = curve[mask]
+
+    if len(values) == 0:
+        return np.nan
+
+    if mode == "max":
+        return float(
+            np.nanmax(values)
+        )
+
+    if mode == "min":
+        return float(
+            np.nanmin(values)
+        )
+
+    return float(
+        np.nanmean(values)
+    )
+
+
+def extract_phase_metrics(
+    percent,
+    hip_curve,
+    knee_curve,
+    ankle_curve
+):
+    """
+    Extract metrics จาก joint-angle curve
+    ใน sagittal plane
+    """
+
+    return {
+        "Hip at Initial Contact": curve_value_at(
+            percent,
+            hip_curve,
+            0
+        ),
+        "Max Hip Extension (30-60%)": curve_range_metric(
+            percent,
+            hip_curve,
+            30,
+            60,
+            "min"
+        ),
+        "Max Hip Flexion in Swing": curve_range_metric(
+            percent,
+            hip_curve,
+            60,
+            100,
+            "max"
+        ),
+
+        "Knee at Initial Contact": curve_value_at(
+            percent,
+            knee_curve,
+            0
+        ),
+        "Peak Knee Flexion Loading": curve_range_metric(
+            percent,
+            knee_curve,
+            0,
+            10,
+            "max"
+        ),
+        "Knee Mid-Stance": curve_range_metric(
+            percent,
+            knee_curve,
+            10,
+            30,
+            "mean"
+        ),
+        "Peak Knee Flexion Swing": curve_range_metric(
+            percent,
+            knee_curve,
+            60,
+            87,
+            "max"
+        ),
+
+        "Ankle at Initial Contact": curve_value_at(
+            percent,
+            ankle_curve,
+            0
+        ),
+        "Ankle Mid-Stance DF": curve_range_metric(
+            percent,
+            ankle_curve,
+            10,
+            30,
+            "mean"
+        ),
+        "Ankle Terminal-Stance DF": curve_range_metric(
+            percent,
+            ankle_curve,
+            30,
+            50,
+            "max"
+        ),
+        "Ankle Mid-Swing DF": curve_range_metric(
+            percent,
+            ankle_curve,
+            73,
+            87,
+            "mean"
+        ),
+    }
+
+
+REFERENCE_BANDS = {
+    # Hip/Knee bands are broad educational sagittal-plane references.
+    # Ankle bands use the Thai healthy-adult study as a contextual reference.
+    "Hip at Initial Contact": (20.0, 30.0),
+    "Max Hip Extension (30-60%)": (-20.0, -10.0),
+    "Max Hip Flexion in Swing": (25.0, 35.0),
+
+    "Knee at Initial Contact": (0.0, 10.0),
+    "Peak Knee Flexion Loading": (10.0, 20.0),
+    "Knee Mid-Stance": (0.0, 10.0),
+    "Peak Knee Flexion Swing": (50.0, 70.0),
+
+    "Ankle at Initial Contact": (-5.0, 5.0),
+    "Ankle Mid-Stance DF": (4.0, 10.0),
+    "Ankle Terminal-Stance DF": (9.0, 18.0),
+    "Ankle Mid-Swing DF": (0.0, 7.0),
+}
+
+
+def reference_status(
+    value,
+    metric_name
+):
+
+    if metric_name not in REFERENCE_BANDS:
+        return "—"
+
+    low, high = REFERENCE_BANDS[
+        metric_name
+    ]
+
+    if low <= value <= high:
+        return "อยู่ในช่วงอ้างอิง"
+
+    return "นอกช่วงอ้างอิง"
+
+
+def calculate_gait_screening(
+    df,
+    cycle_analysis=None
+):
+    """
+    Gait Screening Score แบบ prototype
+
+    หลักการ:
+    1) ถ้ามี gait cycle ที่ normalize ได้:
+       ใช้ curve symmetry + ROM symmetry
+    2) ถ้ายังจับ gait cycle ไม่ได้:
+       ใช้ ROM symmetry เท่านั้น และลดความเชื่อมั่น
+
+    คะแนนนี้ไม่ใช่ clinical validated score
+    และ reference band ไม่ถูกนำมาใช้วินิจฉัยโรค
+    """
+
+    joint_pairs = [
+        (
+            "Hip",
+            "Left Hip Flexion",
+            "Right Hip Flexion",
+        ),
+        (
+            "Knee",
+            "Left Knee Flexion",
+            "Right Knee Flexion",
+        ),
+        (
+            "Ankle",
+            "Left Ankle DF",
+            "Right Ankle DF",
+        ),
+    ]
+
+    rom_si = {}
+
+    for joint, left_col, right_col in joint_pairs:
+
+        left_rom = calculate_rom(
+            df[left_col]
+        )
+
+        right_rom = calculate_rom(
+            df[right_col]
+        )
+
+        rom_si[joint] = calculate_symmetry_index(
+            left_rom,
+            right_rom
+        )
+
+    overall_rom_si = float(
+        np.mean(
+            list(
+                rom_si.values()
+            )
+        )
+    )
+
+    curve_si = {
+        "Hip": np.nan,
+        "Knee": np.nan,
+        "Ankle": np.nan,
+    }
+
+    cycle_available = (
+        cycle_analysis is not None
+        and cycle_analysis.get(
+            "available",
+            False
+        )
+    )
+
+    if cycle_available:
+
+        left = cycle_analysis[
+            "left_cycle"
+        ]["mean_curves"]
+
+        right = cycle_analysis[
+            "right_cycle"
+        ]["mean_curves"]
+
+        curve_si["Hip"] = (
+            calculate_curve_symmetry_index(
+                left[
+                    "Left Hip Flexion"
+                ],
+                right[
+                    "Right Hip Flexion"
+                ]
+            )
+        )
+
+        curve_si["Knee"] = (
+            calculate_curve_symmetry_index(
+                left[
+                    "Left Knee Flexion"
+                ],
+                right[
+                    "Right Knee Flexion"
+                ]
+            )
+        )
+
+        curve_si["Ankle"] = (
+            calculate_curve_symmetry_index(
+                left[
+                    "Left Ankle DF"
+                ],
+                right[
+                    "Right Ankle DF"
+                ]
+            )
+        )
+
+        finite_curve_si = [
+            value
+            for value in curve_si.values()
+            if np.isfinite(value)
+        ]
+
+        overall_si = float(
+            np.mean(
+                finite_curve_si
+            )
+        )
+
+        # Prototype score:
+        # 75% weight = normalized curve symmetry
+        # 25% weight = ROM symmetry
+        penalty = (
+            0.75 * overall_si
+            + 0.25 * overall_rom_si
+        )
+
+        score = float(
+            np.clip(
+                100.0 - 2.0 * penalty,
+                0.0,
+                100.0
+            )
+        )
+
+        confidence = "สูงขึ้น (ตรวจพบ gait cycle)"
+
+    else:
+
+        overall_si = overall_rom_si
+
+        score = float(
+            np.clip(
+                100.0
+                - 2.0 * overall_rom_si,
+                0.0,
+                100.0
+            )
+        )
+
+        confidence = (
+            "จำกัด (ยังตรวจ gait cycle "
+            "ได้ไม่เพียงพอ)"
+        )
+
+    # เกณฑ์นี้เป็น system threshold สำหรับ symmetry screening
+    if overall_si < 5:
+
+        level = "normal"
+
+        status = (
+            "🟢 ความสมมาตรอยู่ในเกณฑ์ระบบ"
+        )
+
+        description = (
+            "ความแตกต่างซ้าย–ขวาที่ระบบคำนวณได้อยู่ในระดับต่ำ "
+            "แต่ไม่ได้หมายความว่ายืนยันว่าเป็น gait ปกติทางคลินิก"
+        )
+
+    elif overall_si < 10:
+
+        level = "warning"
+
+        status = (
+            "🟡 ควรประเมินเพิ่มเติม"
+        )
+
+        description = (
+            "ระบบพบความแตกต่างซ้าย–ขวาในระดับปานกลาง "
+            "ควรตรวจ joint-angle curve และ gait phase เพิ่มเติม"
+        )
+
+    else:
+
+        level = "danger"
+
+        status = (
+            "🔴 พบความแตกต่างซ้าย–ขวาสูง"
+        )
+
+        description = (
+            "ระบบพบความแตกต่างซ้าย–ขวาค่อนข้างมาก "
+            "ควรตรวจคุณภาพวิดีโอและพิจารณาการประเมินเพิ่มเติม"
+        )
+
+    recommendation = (
+        "ใช้ผลร่วมกับกราฟ 0–100% gait cycle, "
+        "ROM, peak joint angles และข้อมูลก่อน–หลังการใช้อุปกรณ์ "
+        "ไม่ควรใช้ค่าใดค่าเดียวเป็นตัวตัดสินความผิดปกติ"
+    )
+
+    return {
+        "status": status,
+        "level": level,
+        "score": score,
+        "overall_si": overall_si,
+        "overall_rom_si": overall_rom_si,
+        "hip_si": (
+            curve_si["Hip"]
+            if np.isfinite(
+                curve_si["Hip"]
+            )
+            else rom_si["Hip"]
+        ),
+        "knee_si": (
+            curve_si["Knee"]
+            if np.isfinite(
+                curve_si["Knee"]
+            )
+            else rom_si["Knee"]
+        ),
+        "ankle_si": (
+            curve_si["Ankle"]
+            if np.isfinite(
+                curve_si["Ankle"]
+            )
+            else rom_si["Ankle"]
+        ),
+        "hip_rom_si": rom_si["Hip"],
+        "knee_rom_si": rom_si["Knee"],
+        "ankle_rom_si": rom_si["Ankle"],
+        "description": description,
+        "recommendation": recommendation,
+        "confidence": confidence,
+        "cycle_available": cycle_available,
+    }
+
+
+# =========================================================
+# 9. Sidebar - ข้อมูลประกอบการวิเคราะห์
 # =========================================================
 
 with st.sidebar:
@@ -674,18 +1582,64 @@ with st.sidebar:
 
     st.markdown(
         """
-        **ระบบวิเคราะห์ท่าเดินจากวิดีโอ**
+        **รูปแบบวิดีโอที่แนะนำ**
 
-        ระบบใช้ Computer Vision และ
-        MediaPipe Pose เพื่อวิเคราะห์
-
-        - Hip Angle
-        - Knee Angle
-        - Ankle Angle
-        - Symmetry Index
-        - ROM
-        - Gait Screening Score
+        - กล้องด้านข้าง (sagittal view)
+        - เห็นศีรษะถึงเท้าหรืออย่างน้อยลำตัวถึงเท้า
+        - เห็นส้นเท้าและปลายเท้าชัด
+        - กล้องนิ่ง
+        - เดินด้วยความเร็วธรรมชาติ
         """
+    )
+
+    st.divider()
+
+    st.markdown(
+        "### 👤 ข้อมูลประกอบรายงาน"
+    )
+
+    subject_age = st.number_input(
+        "อายุ (ปี)",
+        min_value=1,
+        max_value=120,
+        value=30,
+        step=1
+    )
+
+    subject_sex = st.selectbox(
+        "เพศที่บันทึกในรายงาน",
+        [
+            "ไม่ระบุ",
+            "ชาย",
+            "หญิง",
+            "อื่น ๆ"
+        ]
+    )
+
+    st.caption(
+        "อายุและเพศถูกใช้เป็นข้อมูลประกอบรายงานเท่านั้น "
+        "ไม่ได้ถูกใช้ตัดสินว่าปกติหรือผิดปกติในคะแนนระบบ"
+    )
+
+    st.divider()
+
+    walking_direction = st.radio(
+        "ทิศทางการเดินในภาพ",
+        [
+            "เดินไปทางขวา →",
+            "← เดินไปทางซ้าย"
+        ],
+        help=(
+            "ใช้เพื่อกำหนดเครื่องหมาย hip flexion/extension "
+            "และตำแหน่งส้นเท้าด้านหน้า"
+        )
+    )
+
+    direction_sign = (
+        1
+        if walking_direction
+        == "เดินไปทางขวา →"
+        else -1
     )
 
     st.divider()
@@ -693,8 +1647,9 @@ with st.sidebar:
     st.markdown("### ⚠️ ข้อควรทราบ")
 
     st.caption(
-        "ผลลัพธ์เป็นการคัดกรองเบื้องต้น "
-        "จากข้อมูลวิดีโอ ไม่ใช่การวินิจฉัยโรค"
+        "ระบบนี้เป็น markerless 2D video analysis "
+        "จึงไม่เทียบเท่าห้อง gait laboratory ที่ใช้ "
+        "3D motion capture และ force plate"
     )
 
 
@@ -703,7 +1658,15 @@ with st.sidebar:
 # =========================================================
 
 st.markdown(
-    '<div class="section-title">📹 อัปโหลดวิดีโอ</div>',
+    '<div class="section-title">📹 อัปโหลดวิดีโอด้านข้าง</div>',
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    '<div class="section-subtitle">'
+    'ระบบจะพยายามตรวจ heel-strike และ normalize การเดินเป็น 0–100% gait cycle '
+    'หากข้อมูลเพียงพอ'
+    '</div>',
     unsafe_allow_html=True
 )
 
@@ -919,6 +1882,16 @@ if uploaded_file is not None:
                     ].y
                 ]
 
+                l_heel = [
+                    landmarks[
+                        mp_pose.PoseLandmark.LEFT_HEEL.value
+                    ].x,
+
+                    landmarks[
+                        mp_pose.PoseLandmark.LEFT_HEEL.value
+                    ].y
+                ]
+
 
                 # =================================================
                 # RIGHT SIDE
@@ -974,56 +1947,70 @@ if uploaded_file is not None:
                     ].y
                 ]
 
+                r_heel = [
+                    landmarks[
+                        mp_pose.PoseLandmark.RIGHT_HEEL.value
+                    ].x,
+
+                    landmarks[
+                        mp_pose.PoseLandmark.RIGHT_HEEL.value
+                    ].y
+                ]
+
 
                 # =================================================
-                # คำนวณ Knee
+                # คำนวณมุมเชิงคลินิกใน sagittal plane
                 # =================================================
 
-                left_knee_angle = calculate_angle(
+                left_knee_angle = clinical_knee_flexion(
                     l_hip,
                     l_knee,
                     l_ankle
                 )
 
-                right_knee_angle = calculate_angle(
+                right_knee_angle = clinical_knee_flexion(
                     r_hip,
                     r_knee,
                     r_ankle
                 )
 
-
-                # =================================================
-                # คำนวณ Hip
-                # =================================================
-
-                left_hip_angle = calculate_angle(
+                left_hip_angle = clinical_hip_flexion(
                     l_shoulder,
                     l_hip,
-                    l_knee
+                    l_knee,
+                    direction_sign
                 )
 
-                right_hip_angle = calculate_angle(
+                right_hip_angle = clinical_hip_flexion(
                     r_shoulder,
                     r_hip,
-                    r_knee
+                    r_knee,
+                    direction_sign
                 )
 
-
-                # =================================================
-                # คำนวณ Ankle
-                # =================================================
-
-                left_ankle_angle = calculate_angle(
+                left_ankle_angle = clinical_ankle_dorsiflexion(
                     l_knee,
                     l_ankle,
                     l_foot
                 )
 
-                right_ankle_angle = calculate_angle(
+                right_ankle_angle = clinical_ankle_dorsiflexion(
                     r_knee,
                     r_ankle,
                     r_foot
                 )
+
+                mid_hip_x = (
+                    l_hip[0] + r_hip[0]
+                ) / 2.0
+
+                left_heel_forward = (
+                    l_heel[0] - mid_hip_x
+                ) * direction_sign
+
+                right_heel_forward = (
+                    r_heel[0] - mid_hip_x
+                ) * direction_sign
 
 
                 # =================================================
@@ -1038,23 +2025,29 @@ if uploaded_file is not None:
                         frame_count / fps
                     ),
 
-                    "Left Hip Angle":
+                    "Left Hip Flexion":
                         left_hip_angle,
 
-                    "Right Hip Angle":
+                    "Right Hip Flexion":
                         right_hip_angle,
 
-                    "Left Knee Angle":
+                    "Left Knee Flexion":
                         left_knee_angle,
 
-                    "Right Knee Angle":
+                    "Right Knee Flexion":
                         right_knee_angle,
 
-                    "Left Ankle Angle":
+                    "Left Ankle DF":
                         left_ankle_angle,
 
-                    "Right Ankle Angle":
-                        right_ankle_angle
+                    "Right Ankle DF":
+                        right_ankle_angle,
+
+                    "Left Heel Forward":
+                        left_heel_forward,
+
+                    "Right Heel Forward":
+                        right_heel_forward
                 })
 
 
@@ -1171,7 +2164,15 @@ if uploaded_file is not None:
         # ส่วนที่ 1: Medical AI Dashboard
         # =================================================
 
-        screening = calculate_gait_screening(df)
+        cycle_analysis = build_gait_cycle_analysis(
+            df,
+            fps
+        )
+
+        screening = calculate_gait_screening(
+            df,
+            cycle_analysis
+        )
 
         st.divider()
 
@@ -1220,17 +2221,17 @@ if uploaded_file is not None:
                 st.info("ไม่พบภาพโครงร่างสำหรับแสดงผล")
 
             st.metric(
-                "Hip Symmetry",
+                "Hip symmetry index",
                 f"{screening['hip_si']:.2f}%"
             )
 
             st.metric(
-                "Knee Symmetry",
+                "Knee symmetry index",
                 f"{screening['knee_si']:.2f}%"
             )
 
             st.metric(
-                "Ankle Symmetry",
+                "Ankle symmetry index",
                 f"{screening['ankle_si']:.2f}%"
             )
 
@@ -1275,7 +2276,7 @@ if uploaded_file is not None:
                             "color": "#22d3ee",
                             "thickness": 0.22
                         },
-                        "bgcolor": "rgba(255,255,255,0.04)",
+                        "bgcolor": "rgba(125,211,252,0.08)",
                         "borderwidth": 0,
                         "steps": [
                             {
@@ -1345,7 +2346,7 @@ if uploaded_file is not None:
                 height=285,
                 margin=dict(l=20, r=20, t=55, b=25),
                 paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(255,255,255,0.02)",
+                plot_bgcolor="rgba(52, 92, 125, 0.18)",
                 font=dict(color="#e2e8f0"),
                 title_font=dict(color="#f8fafc"),
                 xaxis=dict(
@@ -1481,6 +2482,396 @@ if uploaded_file is not None:
 
 
         # =================================================
+        # Gait Cycle 0-100%
+        # =================================================
+
+        st.divider()
+
+        st.markdown(
+            '<div class="section-title">🔄 Gait Cycle Analysis · 0–100%</div>',
+            unsafe_allow_html=True
+        )
+
+        if (
+            cycle_analysis is not None
+            and cycle_analysis.get(
+                "available",
+                False
+            )
+        ):
+
+            left_cycle = cycle_analysis[
+                "left_cycle"
+            ]
+
+            right_cycle = cycle_analysis[
+                "right_cycle"
+            ]
+
+            gait_percent = left_cycle[
+                "percent"
+            ]
+
+            lc = left_cycle[
+                "mean_curves"
+            ]
+
+            rc = right_cycle[
+                "mean_curves"
+            ]
+
+            cycle_c1, cycle_c2, cycle_c3 = st.columns(3)
+
+            with cycle_c1:
+                st.metric(
+                    "Left gait cycles",
+                    left_cycle["cycle_count"]
+                )
+
+            with cycle_c2:
+                st.metric(
+                    "Right gait cycles",
+                    right_cycle["cycle_count"]
+                )
+
+            with cycle_c3:
+                mean_cycle_duration = np.mean([
+                    left_cycle[
+                        "mean_cycle_duration"
+                    ],
+                    right_cycle[
+                        "mean_cycle_duration"
+                    ],
+                ])
+
+                st.metric(
+                    "Mean stride time",
+                    f"{mean_cycle_duration:.2f} s"
+                )
+
+            def make_cycle_fig(
+                percent,
+                left_curve,
+                right_curve,
+                title,
+                y_title
+            ):
+
+                fig = go.Figure()
+
+                fig.add_trace(
+                    go.Scatter(
+                        x=percent,
+                        y=left_curve,
+                        mode="lines",
+                        name="Left",
+                        line=dict(
+                            color="#22d3ee",
+                            width=3
+                        )
+                    )
+                )
+
+                fig.add_trace(
+                    go.Scatter(
+                        x=percent,
+                        y=right_curve,
+                        mode="lines",
+                        name="Right",
+                        line=dict(
+                            color="#c084fc",
+                            width=3
+                        )
+                    )
+                )
+
+                phase_colors = [
+                    "rgba(34,211,238,0.04)",
+                    "rgba(34,211,238,0.08)",
+                    "rgba(96,165,250,0.05)",
+                    "rgba(96,165,250,0.09)",
+                    "rgba(192,132,252,0.05)",
+                    "rgba(192,132,252,0.09)",
+                    "rgba(167,139,250,0.05)",
+                    "rgba(167,139,250,0.09)",
+                ]
+
+                for (
+                    phase,
+                    start_p,
+                    end_p
+                ), shade in zip(
+                    GAIT_PHASES,
+                    phase_colors
+                ):
+
+                    fig.add_vrect(
+                        x0=start_p,
+                        x1=end_p,
+                        fillcolor=shade,
+                        line_width=0,
+                        layer="below"
+                    )
+
+                for boundary in [
+                    10,
+                    30,
+                    50,
+                    60,
+                    73,
+                    87
+                ]:
+
+                    fig.add_vline(
+                        x=boundary,
+                        line_width=1,
+                        line_dash="dot",
+                        line_color=(
+                            "rgba(203,213,225,0.25)"
+                        )
+                    )
+
+                fig.update_layout(
+                    title=title,
+                    xaxis_title="% Gait Cycle",
+                    yaxis_title=y_title,
+                    hovermode="x unified",
+                    height=430,
+                    margin=dict(
+                        l=35,
+                        r=20,
+                        t=60,
+                        b=40
+                    ),
+                    paper_bgcolor=(
+                        "rgba(0,0,0,0)"
+                    ),
+                    plot_bgcolor=(
+                        "rgba(52,92,125,0.18)"
+                    ),
+                    font=dict(
+                        color="#e2e8f0"
+                    ),
+                    legend_title_text=""
+                )
+
+                return fig
+
+            gait_tab1, gait_tab2, gait_tab3 = st.tabs(
+                [
+                    "🦿 Hip",
+                    "🦵 Knee",
+                    "🦶 Ankle"
+                ]
+            )
+
+            with gait_tab1:
+
+                st.plotly_chart(
+                    make_cycle_fig(
+                        gait_percent,
+                        lc[
+                            "Left Hip Flexion"
+                        ],
+                        rc[
+                            "Right Hip Flexion"
+                        ],
+                        (
+                            "Hip angle across "
+                            "normalized gait cycle"
+                        ),
+                        (
+                            "Flexion (+) / "
+                            "Extension (-) °"
+                        )
+                    ),
+                    use_container_width=True
+                )
+
+            with gait_tab2:
+
+                st.plotly_chart(
+                    make_cycle_fig(
+                        gait_percent,
+                        lc[
+                            "Left Knee Flexion"
+                        ],
+                        rc[
+                            "Right Knee Flexion"
+                        ],
+                        (
+                            "Knee flexion across "
+                            "normalized gait cycle"
+                        ),
+                        "Knee Flexion (°)"
+                    ),
+                    use_container_width=True
+                )
+
+            with gait_tab3:
+
+                st.plotly_chart(
+                    make_cycle_fig(
+                        gait_percent,
+                        lc[
+                            "Left Ankle DF"
+                        ],
+                        rc[
+                            "Right Ankle DF"
+                        ],
+                        (
+                            "Ankle angle across "
+                            "normalized gait cycle"
+                        ),
+                        (
+                            "Dorsiflexion (+) / "
+                            "Plantarflexion (-) °"
+                        )
+                    ),
+                    use_container_width=True
+                )
+
+            # ---------------------------------------------
+            # Extract phase metrics
+            # ---------------------------------------------
+
+            left_metrics = extract_phase_metrics(
+                gait_percent,
+                lc[
+                    "Left Hip Flexion"
+                ],
+                lc[
+                    "Left Knee Flexion"
+                ],
+                lc[
+                    "Left Ankle DF"
+                ]
+            )
+
+            right_metrics = extract_phase_metrics(
+                gait_percent,
+                rc[
+                    "Right Hip Flexion"
+                ],
+                rc[
+                    "Right Knee Flexion"
+                ],
+                rc[
+                    "Right Ankle DF"
+                ]
+            )
+
+            reference_rows = []
+
+            for metric_name in REFERENCE_BANDS:
+
+                low, high = REFERENCE_BANDS[
+                    metric_name
+                ]
+
+                left_value = left_metrics[
+                    metric_name
+                ]
+
+                right_value = right_metrics[
+                    metric_name
+                ]
+
+                reference_rows.append({
+                    "ตัวชี้วัด": metric_name,
+                    "ซ้าย (°)": left_value,
+                    "ขวา (°)": right_value,
+                    "ช่วงอ้างอิง (°)": (
+                        f"{low:g} ถึง {high:g}"
+                    ),
+                    "ซ้าย": reference_status(
+                        left_value,
+                        metric_name
+                    ),
+                    "ขวา": reference_status(
+                        right_value,
+                        metric_name
+                    ),
+                })
+
+            reference_df = pd.DataFrame(
+                reference_rows
+            )
+
+            st.markdown(
+                '<div class="section-title">'
+                '📚 Phase-based reference comparison'
+                '</div>',
+                unsafe_allow_html=True
+            )
+
+            st.caption(
+                "ช่วงอ้างอิงใช้เพื่อช่วยอ่านกราฟ ไม่ถูกนำไปใช้วินิจฉัย "
+                "และไม่ถูกใช้เป็นเกณฑ์ตัดสินคะแนนโดยตรง"
+            )
+
+            st.dataframe(
+                reference_df.style.format({
+                    "ซ้าย (°)": "{:.2f}",
+                    "ขวา (°)": "{:.2f}",
+                }),
+                use_container_width=True,
+                hide_index=True
+            )
+
+            # ---------------------------------------------
+            # Gait phase table
+            # ---------------------------------------------
+
+            phase_df = pd.DataFrame(
+                [
+                    {
+                        "Phase": phase,
+                        "% Gait Cycle":
+                            f"{start_p}–{end_p}%"
+                    }
+                    for (
+                        phase,
+                        start_p,
+                        end_p
+                    ) in GAIT_PHASES
+                ]
+            )
+
+            with st.expander(
+                "ℹ️ ดูช่วงของ 8 Gait Phases"
+            ):
+
+                st.dataframe(
+                    phase_df,
+                    use_container_width=True,
+                    hide_index=True
+                )
+
+                st.markdown(
+                    """
+                    **หมายเหตุเรื่องข้อเท้า:** ในการเดินปกติ
+                    ข้อเท้ามักเพิ่ม dorsiflexion ในช่วง terminal stance
+                    แล้วจึง plantarflex อย่างรวดเร็วในช่วง pre-swing /
+                    push-off ดังนั้นระบบนี้ไม่ตีความ
+                    “terminal stance = plantarflexion” โดยตรง
+                    """
+                )
+
+        else:
+
+            st.warning(
+                "ยังตรวจพบ heel-strike ต่อเนื่องไม่เพียงพอ "
+                "จึงยังไม่สามารถสร้างกราฟ 0–100% gait cycle ได้"
+            )
+
+            st.info(
+                "แนะนำให้ใช้วิดีโอด้านข้างที่เห็นส้นเท้าชัด "
+                "มีอย่างน้อย 2–3 stride ต่อข้าง และกล้องนิ่ง"
+            )
+
+
+        # =================================================
         # ส่วนที่ 2: กราฟการเคลื่อนไหว
         # =================================================
 
@@ -1503,15 +2894,15 @@ if uploaded_file is not None:
             df,
             x="Time (s)",
             y=[
-                "Left Knee Angle",
-                "Right Knee Angle"
+                "Left Knee Flexion",
+                "Right Knee Flexion"
             ],
             labels={
                 "value": "มุม (องศา)",
                 "variable": "ข้าง",
                 "Time (s)": "เวลา (วินาที)"
             },
-            title="Knee Angle"
+            title="Knee Flexion / Extension"
         )
 
         # Hip
@@ -1519,15 +2910,15 @@ if uploaded_file is not None:
             df,
             x="Time (s)",
             y=[
-                "Left Hip Angle",
-                "Right Hip Angle"
+                "Left Hip Flexion",
+                "Right Hip Flexion"
             ],
             labels={
                 "value": "มุม (องศา)",
                 "variable": "ข้าง",
                 "Time (s)": "เวลา (วินาที)"
             },
-            title="Hip Angle"
+            title="Hip Flexion (+) / Extension (-)"
         )
 
         # Ankle
@@ -1535,15 +2926,15 @@ if uploaded_file is not None:
             df,
             x="Time (s)",
             y=[
-                "Left Ankle Angle",
-                "Right Ankle Angle"
+                "Left Ankle DF",
+                "Right Ankle DF"
             ],
             labels={
                 "value": "มุม (องศา)",
                 "variable": "ข้าง",
                 "Time (s)": "เวลา (วินาที)"
             },
-            title="Ankle Angle"
+            title="Ankle Dorsiflexion (+) / Plantarflexion (-)"
         )
 
         for fig in [
@@ -1557,7 +2948,7 @@ if uploaded_file is not None:
                 height=420,
                 margin=dict(l=30, r=20, t=55, b=35),
                 paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(255,255,255,0.02)",
+                plot_bgcolor="rgba(52, 92, 125, 0.18)",
                 font=dict(color="#e2e8f0"),
                 title_font=dict(color="#f8fafc"),
                 xaxis=dict(
@@ -1567,6 +2958,15 @@ if uploaded_file is not None:
                     gridcolor="rgba(148,163,184,0.10)"
                 )
             )
+
+        # สีเส้นให้ตัดกับพื้นหลังและอ่านง่าย
+        for fig in [fig_knee, fig_hip, fig_ankle]:
+            if len(fig.data) >= 1:
+                fig.data[0].line.color = "#22d3ee"
+                fig.data[0].line.width = 3
+            if len(fig.data) >= 2:
+                fig.data[1].line.color = "#c084fc"
+                fig.data[1].line.width = 3
 
         tab_knee, tab_hip, tab_ankle = st.tabs(
             [
@@ -1608,35 +3008,35 @@ if uploaded_file is not None:
 
 
         mean_left_knee = df[
-            "Left Knee Angle"
+            "Left Knee Flexion"
         ].mean()
 
         mean_right_knee = df[
-            "Right Knee Angle"
+            "Right Knee Flexion"
         ].mean()
 
         max_left_knee = df[
-            "Left Knee Angle"
+            "Left Knee Flexion"
         ].max()
 
         max_right_knee = df[
-            "Right Knee Angle"
+            "Right Knee Flexion"
         ].max()
 
         min_left_knee = df[
-            "Left Knee Angle"
+            "Left Knee Flexion"
         ].min()
 
         min_right_knee = df[
-            "Right Knee Angle"
+            "Right Knee Flexion"
         ].min()
 
         rom_left_knee = calculate_rom(
-            df["Left Knee Angle"]
+            df["Left Knee Flexion"]
         )
 
         rom_right_knee = calculate_rom(
-            df["Right Knee Angle"]
+            df["Right Knee Flexion"]
         )
 
 
@@ -1812,60 +3212,60 @@ if uploaded_file is not None:
             "ซ้ายเฉลี่ย (°)": [
 
                 df[
-                    "Left Hip Angle"
+                    "Left Hip Flexion"
                 ].mean(),
 
                 df[
-                    "Left Knee Angle"
+                    "Left Knee Flexion"
                 ].mean(),
 
                 df[
-                    "Left Ankle Angle"
+                    "Left Ankle DF"
                 ].mean()
             ],
 
             "ขวาเฉลี่ย (°)": [
 
                 df[
-                    "Right Hip Angle"
+                    "Right Hip Flexion"
                 ].mean(),
 
                 df[
-                    "Right Knee Angle"
+                    "Right Knee Flexion"
                 ].mean(),
 
                 df[
-                    "Right Ankle Angle"
+                    "Right Ankle DF"
                 ].mean()
             ],
 
             "ซ้าย ROM (°)": [
 
                 calculate_rom(
-                    df["Left Hip Angle"]
+                    df["Left Hip Flexion"]
                 ),
 
                 calculate_rom(
-                    df["Left Knee Angle"]
+                    df["Left Knee Flexion"]
                 ),
 
                 calculate_rom(
-                    df["Left Ankle Angle"]
+                    df["Left Ankle DF"]
                 )
             ],
 
             "ขวา ROM (°)": [
 
                 calculate_rom(
-                    df["Right Hip Angle"]
+                    df["Right Hip Flexion"]
                 ),
 
                 calculate_rom(
-                    df["Right Knee Angle"]
+                    df["Right Knee Flexion"]
                 ),
 
                 calculate_rom(
-                    df["Right Ankle Angle"]
+                    df["Right Ankle DF"]
                 )
             ]
         }
@@ -1982,6 +3382,40 @@ if uploaded_file is not None:
             mime="text/csv",
 
             use_container_width=True
+        )
+
+
+        st.divider()
+
+        st.markdown(
+            '<div class="section-title">🧾 ข้อมูลประกอบการประเมิน</div>',
+            unsafe_allow_html=True
+        )
+
+        context_c1, context_c2, context_c3 = st.columns(3)
+
+        with context_c1:
+            st.metric(
+                "อายุ",
+                f"{subject_age} ปี"
+            )
+
+        with context_c2:
+            st.metric(
+                "เพศในรายงาน",
+                subject_sex
+            )
+
+        with context_c3:
+            st.metric(
+                "ทิศทาง",
+                walking_direction
+            )
+
+        st.info(
+            "อายุ เพศ ความเร็วเดิน และสัดส่วนร่างกายสามารถมีผลต่อ gait kinematics "
+            "แต่เวอร์ชันนี้ไม่ได้ใช้เพศหรืออายุเป็นตัวปรับคะแนนหรือเป็นตัวตัดสิน "
+            "ความผิดปกติโดยอัตโนมัติ"
         )
 
 
