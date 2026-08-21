@@ -25,19 +25,131 @@ mp_drawing_styles = mp.solutions.drawing_styles
 st.set_page_config(
     page_title="ระบบวิเคราะห์ท่าเดิน",
     page_icon="🦶",
-    layout="wide"
-)
-
-st.title("🦶 ระบบวิเคราะห์ท่าเดินจากวิดีโอ")
-
-st.caption(
-    "Video Gait Analysis System | "
-    "วิเคราะห์มุมข้อต่อ ความสมมาตร และ Gait Screening"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 
 # =========================================================
-# 3. ฟังก์ชันคำนวณมุมข้อต่อ
+# 3. CSS สำหรับ UI
+# =========================================================
+
+st.markdown(
+    """
+    <style>
+
+    .main {
+        background-color: #f7f9fc;
+    }
+
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 3rem;
+    }
+
+    .main-title {
+        font-size: 2.4rem;
+        font-weight: 800;
+        color: #17324d;
+        margin-bottom: 0.2rem;
+    }
+
+    .subtitle {
+        color: #64748b;
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .section-title {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: #17324d;
+        margin-top: 1rem;
+        margin-bottom: 0.8rem;
+    }
+
+    .screening-card {
+        padding: 1.5rem;
+        border-radius: 18px;
+        background: white;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        margin-bottom: 1rem;
+    }
+
+    .score-number {
+        font-size: 3rem;
+        font-weight: 800;
+        color: #17324d;
+        text-align: center;
+    }
+
+    .score-label {
+        text-align: center;
+        color: #64748b;
+        font-size: 0.95rem;
+    }
+
+    .normal-card {
+        padding: 1.2rem;
+        border-radius: 16px;
+        background: #ecfdf5;
+        border: 1px solid #86efac;
+    }
+
+    .warning-card {
+        padding: 1.2rem;
+        border-radius: 16px;
+        background: #fffbeb;
+        border: 1px solid #fcd34d;
+    }
+
+    .danger-card {
+        padding: 1.2rem;
+        border-radius: 16px;
+        background: #fef2f2;
+        border: 1px solid #fca5a5;
+    }
+
+    .info-card {
+        padding: 1.2rem;
+        border-radius: 16px;
+        background: #eff6ff;
+        border: 1px solid #93c5fd;
+    }
+
+    .footer-note {
+        color: #64748b;
+        font-size: 0.85rem;
+        line-height: 1.6;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# =========================================================
+# 4. Header
+# =========================================================
+
+st.markdown(
+    '<div class="main-title">🦶 ระบบวิเคราะห์ท่าเดินจากวิดีโอ</div>',
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    '<div class="subtitle">'
+    'Video Gait Analysis System | '
+    'วิเคราะห์มุมข้อต่อ ความสมมาตร และ Gait Screening'
+    '</div>',
+    unsafe_allow_html=True
+)
+
+
+# =========================================================
+# 5. ฟังก์ชันคำนวณมุมข้อต่อ
 # =========================================================
 
 def calculate_angle(a, b, c):
@@ -51,8 +163,15 @@ def calculate_angle(a, b, c):
     c = np.array(c, dtype=np.float64)
 
     radians = (
-        np.arctan2(c[1] - b[1], c[0] - b[0])
-        - np.arctan2(a[1] - b[1], a[0] - b[0])
+        np.arctan2(
+            c[1] - b[1],
+            c[0] - b[0]
+        )
+        -
+        np.arctan2(
+            a[1] - b[1],
+            a[0] - b[0]
+        )
     )
 
     angle = np.abs(
@@ -66,25 +185,32 @@ def calculate_angle(a, b, c):
 
 
 # =========================================================
-# 4. ฟังก์ชันคำนวณ Symmetry Index
+# 6. ฟังก์ชันคำนวณ Symmetry Index
 # =========================================================
 
 def calculate_symmetry_index(left_val, right_val):
 
-    if left_val + right_val == 0:
+    denominator = 0.5 * (
+        abs(left_val) + abs(right_val)
+    )
+
+    if denominator == 0:
         return 0.0
 
     return (
         abs(left_val - right_val)
-        / (0.5 * (left_val + right_val))
+        / denominator
     ) * 100
 
 
 # =========================================================
-# 5. ฟังก์ชันคำนวณ ROM
+# 7. ฟังก์ชันคำนวณ ROM
 # =========================================================
 
 def calculate_rom(series):
+
+    if series.empty:
+        return 0.0
 
     return float(
         series.max() - series.min()
@@ -92,7 +218,7 @@ def calculate_rom(series):
 
 
 # =========================================================
-# 6. ฟังก์ชันประเมิน Gait Screening
+# 8. ฟังก์ชันประเมิน Gait Screening
 # =========================================================
 
 def calculate_gait_screening(df):
@@ -103,8 +229,34 @@ def calculate_gait_screening(df):
     ไม่ใช่การวินิจฉัยทางการแพทย์
     """
 
+    # -----------------------------------------------------
+    # ตรวจสอบข้อมูล
+    # -----------------------------------------------------
+
+    required_columns = [
+        "Left Knee Angle",
+        "Right Knee Angle",
+        "Left Hip Angle",
+        "Right Hip Angle",
+        "Left Ankle Angle",
+        "Right Ankle Angle"
+    ]
+
+    for column in required_columns:
+
+        if column not in df.columns:
+            raise ValueError(
+                f"ไม่พบข้อมูล {column}"
+            )
+
+    if df.empty:
+        raise ValueError(
+            "ไม่มีข้อมูลสำหรับการประเมิน"
+        )
+
+
     # =====================================================
-    # 6.1 ค่าเฉลี่ยมุมแต่ละข้าง
+    # ค่าเฉลี่ยมุมแต่ละข้าง
     # =====================================================
 
     left_knee = df[
@@ -133,7 +285,7 @@ def calculate_gait_screening(df):
 
 
     # =====================================================
-    # 6.2 คำนวณ Symmetry Index
+    # Symmetry Index
     # =====================================================
 
     knee_si = calculate_symmetry_index(
@@ -153,18 +305,20 @@ def calculate_gait_screening(df):
 
 
     # =====================================================
-    # 6.3 Overall Symmetry Index
+    # Overall SI
     # =====================================================
 
-    overall_si = np.mean([
-        knee_si,
-        hip_si,
-        ankle_si
-    ])
+    overall_si = float(
+        np.mean([
+            knee_si,
+            hip_si,
+            ankle_si
+        ])
+    )
 
 
     # =====================================================
-    # 6.4 คำนวณ ROM ของแต่ละข้าง
+    # ROM
     # =====================================================
 
     left_knee_rom = calculate_rom(
@@ -193,7 +347,7 @@ def calculate_gait_screening(df):
 
 
     # =====================================================
-    # 6.5 ROM Symmetry Index
+    # ROM Symmetry Index
     # =====================================================
 
     knee_rom_si = calculate_symmetry_index(
@@ -213,36 +367,40 @@ def calculate_gait_screening(df):
 
 
     # =====================================================
-    # 6.6 Overall ROM Symmetry
+    # Overall ROM SI
     # =====================================================
 
-    overall_rom_si = np.mean([
-        knee_rom_si,
-        hip_rom_si,
-        ankle_rom_si
-    ])
+    overall_rom_si = float(
+        np.mean([
+            knee_rom_si,
+            hip_rom_si,
+            ankle_rom_si
+        ])
+    )
 
 
     # =====================================================
-    # 6.7 Gait Screening Score
+    # Gait Screening Score
     #
     # SI ต่ำ = สมมาตรมาก
     # SI สูง = แตกต่างมาก
     #
-    # ใช้ค่า Overall SI เป็นหลัก
+    # หมายเหตุ:
+    # เป็นคะแนน screening ที่ออกแบบในระบบ
+    # ไม่ใช่คะแนนมาตรฐานทางคลินิก
     # =====================================================
 
     score = max(
-        0,
+        0.0,
         min(
-            100,
-            100 - (overall_si * 2)
+            100.0,
+            100.0 - (overall_si * 2.0)
         )
     )
 
 
     # =====================================================
-    # 6.8 ประเมินสถานะ
+    # ประเมินระดับ
     # =====================================================
 
     if overall_si < 5:
@@ -250,15 +408,18 @@ def calculate_gait_screening(df):
         status = "🟢 ปกติ"
 
         description = (
-            "จากข้อมูลวิดีโอที่วิเคราะห์ "
-            "พบความแตกต่างของมุมข้อต่อระหว่างซ้ายและขวา "
+            "จากตัวชี้วัดที่ระบบวิเคราะห์ "
+            "พบความแตกต่างระหว่างด้านซ้ายและขวา "
             "ในระดับต่ำ และมีความสมมาตรโดยรวมค่อนข้างดี"
         )
 
         recommendation = (
-            "ผลการคัดกรองอยู่ในระดับที่ไม่พบความแตกต่าง "
-            "อย่างเด่นชัดจากตัวชี้วัดที่ใช้"
+            "สามารถใช้ผลนี้เป็นข้อมูลคัดกรองเบื้องต้น "
+            "และควรพิจารณาร่วมกับลักษณะการเดินจริง "
+            "และข้อมูลอื่นที่เกี่ยวข้อง"
         )
+
+        level = "normal"
 
 
     elif overall_si < 10:
@@ -266,16 +427,18 @@ def calculate_gait_screening(df):
         status = "🟡 ควรประเมินเพิ่มเติม"
 
         description = (
-            "พบความแตกต่างของมุมข้อต่อระหว่างซ้ายและขวา "
-            "ในระดับปานกลาง อาจควรพิจารณาข้อมูลเพิ่มเติม "
-            "และสังเกตลักษณะการเดินในรายละเอียด"
+            "พบความแตกต่างระหว่างด้านซ้ายและขวา "
+            "ในระดับปานกลางจากตัวชี้วัดที่ระบบใช้"
         )
 
         recommendation = (
             "ควรตรวจสอบวิดีโอเพิ่มเติม เช่น "
             "รูปแบบการลงเท้า การก้าว ความยาวก้าว "
-            "และการเคลื่อนไหวของแต่ละข้าง"
+            "การเคลื่อนไหวของเข่า สะโพก และข้อเท้า "
+            "รวมถึงพิจารณาคุณภาพและมุมของกล้อง"
         )
+
+        level = "warning"
 
 
     else:
@@ -283,24 +446,28 @@ def calculate_gait_screening(df):
         status = "🔴 พบความแตกต่างมาก"
 
         description = (
-            "พบความแตกต่างของมุมข้อต่อระหว่างซ้ายและขวา "
+            "พบความแตกต่างระหว่างด้านซ้ายและขวา "
             "ค่อนข้างมากจากตัวชี้วัดที่ใช้ในการคัดกรอง"
         )
 
         recommendation = (
             "ควรพิจารณาประเมินการเดินเพิ่มเติมโดยผู้เชี่ยวชาญ "
-            "โดยเฉพาะหากมีอาการปวด อ่อนแรง เดินผิดปกติ "
-            "หรือมีปัญหาด้านการทรงตัวร่วมด้วย"
+            "โดยเฉพาะหากมีอาการปวด อ่อนแรง "
+            "เดินผิดปกติ หรือมีปัญหาด้านการทรงตัวร่วมด้วย"
         )
+
+        level = "danger"
 
 
     # =====================================================
-    # 6.9 คืนค่าผลทั้งหมด
+    # คืนค่าผลทั้งหมด
     # =====================================================
 
     return {
 
         "status": status,
+
+        "level": level,
 
         "score": score,
 
@@ -327,24 +494,68 @@ def calculate_gait_screening(df):
 
 
 # =========================================================
-# 7. อัปโหลดวิดีโอ
+# 9. Sidebar
 # =========================================================
 
+with st.sidebar:
+
+    st.markdown("## 🦶 Gait Analysis")
+
+    st.markdown(
+        """
+        **ระบบวิเคราะห์ท่าเดินจากวิดีโอ**
+
+        ระบบใช้ Computer Vision และ
+        MediaPipe Pose เพื่อวิเคราะห์
+
+        - Hip Angle
+        - Knee Angle
+        - Ankle Angle
+        - Symmetry Index
+        - ROM
+        - Gait Screening Score
+        """
+    )
+
+    st.divider()
+
+    st.markdown("### ⚠️ ข้อควรทราบ")
+
+    st.caption(
+        "ผลลัพธ์เป็นการคัดกรองเบื้องต้น "
+        "จากข้อมูลวิดีโอ ไม่ใช่การวินิจฉัยโรค"
+    )
+
+
+# =========================================================
+# 10. อัปโหลดวิดีโอ
+# =========================================================
+
+st.markdown(
+    '<div class="section-title">📹 อัปโหลดวิดีโอ</div>',
+    unsafe_allow_html=True
+)
+
 uploaded_file = st.file_uploader(
-    "📹 อัปโหลดคลิปวิดีโอการเดิน",
-    type=["mp4", "mov", "avi"]
+    "เลือกคลิปวิดีโอการเดิน",
+    type=[
+        "mp4",
+        "mov",
+        "avi"
+    ],
+    help="แนะนำให้ใช้วิดีโอที่เห็นร่างกายเต็มตัวและมีแสงเพียงพอ"
 )
 
 
 # =========================================================
-# 8. เริ่มวิเคราะห์เมื่อมีวิดีโอ
+# 11. เริ่มวิเคราะห์
 # =========================================================
 
 if uploaded_file is not None:
 
-    # -----------------------------------------------------
-    # บันทึกไฟล์วิดีโอชั่วคราว
-    # -----------------------------------------------------
+    # =====================================================
+    # บันทึกไฟล์ชั่วคราว
+    # =====================================================
 
     tfile = tempfile.NamedTemporaryFile(
         delete=False,
@@ -360,9 +571,9 @@ if uploaded_file is not None:
     video_path = tfile.name
 
 
-    # -----------------------------------------------------
+    # =====================================================
     # เปิดวิดีโอ
-    # -----------------------------------------------------
+    # =====================================================
 
     cap = cv2.VideoCapture(
         video_path
@@ -382,16 +593,40 @@ if uploaded_file is not None:
         fps = 30.0
 
 
-    st.info(
-        f"อัปโหลดวิดีโอเรียบร้อยแล้ว | "
-        f"ประมาณ {total_frames} เฟรม | "
-        f"{fps:.1f} FPS"
-    )
+    duration = total_frames / fps
 
 
-    # -----------------------------------------------------
+    # =====================================================
+    # ข้อมูลวิดีโอ
+    # =====================================================
+
+    info1, info2, info3 = st.columns(3)
+
+    with info1:
+
+        st.metric(
+            "🎞️ จำนวนเฟรม",
+            f"{total_frames:,}"
+        )
+
+    with info2:
+
+        st.metric(
+            "⏱️ FPS",
+            f"{fps:.1f}"
+        )
+
+    with info3:
+
+        st.metric(
+            "🕐 ความยาว",
+            f"{duration:.1f} วินาที"
+        )
+
+
+    # =====================================================
     # เตรียมตัวแปร
-    # -----------------------------------------------------
+    # =====================================================
 
     frames_data = []
 
@@ -405,7 +640,7 @@ if uploaded_file is not None:
 
 
     # =====================================================
-    # 9. MediaPipe Pose
+    # MediaPipe Pose
     # =====================================================
 
     with mp_pose.Pose(
@@ -424,7 +659,7 @@ if uploaded_file is not None:
 
 
             # -------------------------------------------------
-            # แปลง BGR → RGB
+            # BGR → RGB
             # -------------------------------------------------
 
             image = cv2.cvtColor(
@@ -436,7 +671,7 @@ if uploaded_file is not None:
 
 
             # -------------------------------------------------
-            # วิเคราะห์ Pose
+            # Pose
             # -------------------------------------------------
 
             results = pose.process(
@@ -447,7 +682,7 @@ if uploaded_file is not None:
 
 
             # =================================================
-            # 10. ถ้าพบโครงร่างร่างกาย
+            # ถ้าพบโครงร่าง
             # =================================================
 
             if results.pose_landmarks:
@@ -463,61 +698,51 @@ if uploaded_file is not None:
 
                 l_shoulder = [
                     landmarks[
-                        mp_pose.PoseLandmark
-                        .LEFT_SHOULDER.value
+                        mp_pose.PoseLandmark.LEFT_SHOULDER.value
                     ].x,
 
                     landmarks[
-                        mp_pose.PoseLandmark
-                        .LEFT_SHOULDER.value
+                        mp_pose.PoseLandmark.LEFT_SHOULDER.value
                     ].y
                 ]
 
                 l_hip = [
                     landmarks[
-                        mp_pose.PoseLandmark
-                        .LEFT_HIP.value
+                        mp_pose.PoseLandmark.LEFT_HIP.value
                     ].x,
 
                     landmarks[
-                        mp_pose.PoseLandmark
-                        .LEFT_HIP.value
+                        mp_pose.PoseLandmark.LEFT_HIP.value
                     ].y
                 ]
 
                 l_knee = [
                     landmarks[
-                        mp_pose.PoseLandmark
-                        .LEFT_KNEE.value
+                        mp_pose.PoseLandmark.LEFT_KNEE.value
                     ].x,
 
                     landmarks[
-                        mp_pose.PoseLandmark
-                        .LEFT_KNEE.value
+                        mp_pose.PoseLandmark.LEFT_KNEE.value
                     ].y
                 ]
 
                 l_ankle = [
                     landmarks[
-                        mp_pose.PoseLandmark
-                        .LEFT_ANKLE.value
+                        mp_pose.PoseLandmark.LEFT_ANKLE.value
                     ].x,
 
                     landmarks[
-                        mp_pose.PoseLandmark
-                        .LEFT_ANKLE.value
+                        mp_pose.PoseLandmark.LEFT_ANKLE.value
                     ].y
                 ]
 
                 l_foot = [
                     landmarks[
-                        mp_pose.PoseLandmark
-                        .LEFT_FOOT_INDEX.value
+                        mp_pose.PoseLandmark.LEFT_FOOT_INDEX.value
                     ].x,
 
                     landmarks[
-                        mp_pose.PoseLandmark
-                        .LEFT_FOOT_INDEX.value
+                        mp_pose.PoseLandmark.LEFT_FOOT_INDEX.value
                     ].y
                 ]
 
@@ -528,72 +753,58 @@ if uploaded_file is not None:
 
                 r_shoulder = [
                     landmarks[
-                        mp_pose.PoseLandmark
-                        .RIGHT_SHOULDER.value
+                        mp_pose.PoseLandmark.RIGHT_SHOULDER.value
                     ].x,
 
                     landmarks[
-                        mp_pose.PoseLandmark
-                        .RIGHT_SHOULDER.value
+                        mp_pose.PoseLandmark.RIGHT_SHOULDER.value
                     ].y
                 ]
 
                 r_hip = [
                     landmarks[
-                        mp_pose.PoseLandmark
-                        .RIGHT_HIP.value
+                        mp_pose.PoseLandmark.RIGHT_HIP.value
                     ].x,
 
                     landmarks[
-                        mp_pose.PoseLandmark
-                        .RIGHT_HIP.value
+                        mp_pose.PoseLandmark.RIGHT_HIP.value
                     ].y
                 ]
 
                 r_knee = [
                     landmarks[
-                        mp_pose.PoseLandmark
-                        .RIGHT_KNEE.value
+                        mp_pose.PoseLandmark.RIGHT_KNEE.value
                     ].x,
 
                     landmarks[
-                        mp_pose.PoseLandmark
-                        .RIGHT_KNEE.value
+                        mp_pose.PoseLandmark.RIGHT_KNEE.value
                     ].y
                 ]
 
                 r_ankle = [
                     landmarks[
-                        mp_pose.PoseLandmark
-                        .RIGHT_ANKLE.value
+                        mp_pose.PoseLandmark.RIGHT_ANKLE.value
                     ].x,
 
                     landmarks[
-                        mp_pose.PoseLandmark
-                        .RIGHT_ANKLE.value
+                        mp_pose.PoseLandmark.RIGHT_ANKLE.value
                     ].y
                 ]
 
                 r_foot = [
                     landmarks[
-                        mp_pose.PoseLandmark
-                        .RIGHT_FOOT_INDEX.value
+                        mp_pose.PoseLandmark.RIGHT_FOOT_INDEX.value
                     ].x,
 
                     landmarks[
-                        mp_pose.PoseLandmark
-                        .RIGHT_FOOT_INDEX.value
+                        mp_pose.PoseLandmark.RIGHT_FOOT_INDEX.value
                     ].y
                 ]
 
 
                 # =================================================
-                # 11. คำนวณมุมข้อต่อ
+                # คำนวณ Knee
                 # =================================================
-
-                # -------------------------------------------------
-                # Knee
-                # -------------------------------------------------
 
                 left_knee_angle = calculate_angle(
                     l_hip,
@@ -608,9 +819,9 @@ if uploaded_file is not None:
                 )
 
 
-                # -------------------------------------------------
-                # Hip
-                # -------------------------------------------------
+                # =================================================
+                # คำนวณ Hip
+                # =================================================
 
                 left_hip_angle = calculate_angle(
                     l_shoulder,
@@ -625,9 +836,9 @@ if uploaded_file is not None:
                 )
 
 
-                # -------------------------------------------------
-                # Ankle
-                # -------------------------------------------------
+                # =================================================
+                # คำนวณ Ankle
+                # =================================================
 
                 left_ankle_angle = calculate_angle(
                     l_knee,
@@ -643,7 +854,7 @@ if uploaded_file is not None:
 
 
                 # =================================================
-                # 12. เก็บข้อมูลของแต่ละ Frame
+                # เก็บข้อมูล
                 # =================================================
 
                 frames_data.append({
@@ -675,7 +886,7 @@ if uploaded_file is not None:
 
 
                 # =================================================
-                # 13. วาด Skeleton
+                # วาด Skeleton
                 # =================================================
 
                 mp_drawing.draw_landmarks(
@@ -694,7 +905,7 @@ if uploaded_file is not None:
 
 
             # =================================================
-            # 14. แสดง Progress
+            # Progress
             # =================================================
 
             progress = min(
@@ -707,8 +918,8 @@ if uploaded_file is not None:
             )
 
             status_text.text(
-                f"กำลังประมวลผลเฟรมที่ "
-                f"{frame_count}/{total_frames}"
+                f"กำลังวิเคราะห์เฟรม "
+                f"{frame_count:,}/{total_frames:,}"
             )
 
 
@@ -725,11 +936,12 @@ if uploaded_file is not None:
                 )
 
 
-    # =========================================================
-    # 15. ปิด Video
-    # =========================================================
+    # =====================================================
+    # ปิด Video
+    # =====================================================
 
     cap.release()
+
 
     try:
 
@@ -746,43 +958,244 @@ if uploaded_file is not None:
 
     status_text.empty()
 
-    st.success(
-        "✅ วิเคราะห์วิดีโอเสร็จสิ้น!"
-    )
+
+    # =====================================================
+    # วิเคราะห์ผล
+    # =====================================================
+
+    if not frames_data:
+
+        st.error(
+            "❌ ไม่พบโครงร่างร่างกายจากวิดีโอ"
+        )
+
+        st.info(
+            "ลองใช้วิดีโอที่เห็นร่างกายเต็มตัว "
+            "แสงเพียงพอ และไม่มีสิ่งกีดขวาง"
+        )
+
+    else:
+
+        st.success(
+            f"✅ วิเคราะห์เสร็จสิ้น "
+            f"ตรวจพบข้อมูลจำนวน {len(frames_data):,} เฟรม"
+        )
 
 
-    # =========================================================
-    # 16. วิเคราะห์ข้อมูล
-    # =========================================================
-
-    if frames_data:
+        # =================================================
+        # DataFrame
+        # =================================================
 
         df = pd.DataFrame(
             frames_data
         )
 
 
-        # =====================================================
-        # 17. ข้อมูลเบื้องต้น
-        # =====================================================
+        # =================================================
+        # ส่วนที่ 1: Screening
+        # =================================================
 
-        st.subheader(
-            "📋 ข้อมูลการวิเคราะห์"
-        )
-
-        st.dataframe(
-            df.head(10),
-            use_container_width=True
+        screening = calculate_gait_screening(
+            df
         )
 
 
-        # =====================================================
-        # 18. กราฟ Knee
-        # =====================================================
+        st.divider()
 
-        st.subheader(
-            "🦵 การเปลี่ยนแปลงมุมเข่า"
+        st.markdown(
+            '<div class="section-title">🩺 ผลการคัดกรองการเดิน</div>',
+            unsafe_allow_html=True
         )
+
+        st.caption(
+            "ผลนี้เป็นการคัดกรองจากความแตกต่างของมุมข้อต่อ "
+            "ซ้าย–ขวา ไม่ใช่การวินิจฉัยทางการแพทย์"
+        )
+
+
+        # =================================================
+        # Screening Score
+        # =================================================
+
+        score_col1, score_col2 = st.columns(
+            [1, 2]
+        )
+
+
+        with score_col1:
+
+            st.markdown(
+                f"""
+                <div class="screening-card">
+                    <div class="score-number">
+                        {screening['score']:.1f}
+                    </div>
+                    <div class="score-label">
+                        Gait Screening Score / 100
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+
+            st.progress(
+                int(
+                    round(
+                        screening["score"]
+                    )
+                )
+            )
+
+
+        with score_col2:
+
+            if screening["level"] == "normal":
+
+                st.markdown(
+                    f"""
+                    <div class="normal-card">
+                        <h2>🟢 ปกติ</h2>
+                        <p>
+                        {screening['description']}
+                        </p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+            elif screening["level"] == "warning":
+
+                st.markdown(
+                    f"""
+                    <div class="warning-card">
+                        <h2>🟡 ควรประเมินเพิ่มเติม</h2>
+                        <p>
+                        {screening['description']}
+                        </p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+            else:
+
+                st.markdown(
+                    f"""
+                    <div class="danger-card">
+                        <h2>🔴 พบความแตกต่างมาก</h2>
+                        <p>
+                        {screening['description']}
+                        </p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+
+        # =================================================
+        # Overall Metrics
+        # =================================================
+
+        st.markdown(
+            '<div class="section-title">📊 ตัวชี้วัดหลัก</div>',
+            unsafe_allow_html=True
+        )
+
+
+        m1, m2, m3, m4 = st.columns(4)
+
+
+        with m1:
+
+            st.metric(
+                "Overall SI",
+                f"{screening['overall_si']:.2f}%"
+            )
+
+
+        with m2:
+
+            st.metric(
+                "Overall ROM SI",
+                f"{screening['overall_rom_si']:.2f}%"
+            )
+
+
+        with m3:
+
+            st.metric(
+                "Frames วิเคราะห์",
+                f"{len(df):,}"
+            )
+
+
+        with m4:
+
+            st.metric(
+                "ระยะเวลาวิเคราะห์",
+                f"{df['Time (s)'].max():.1f} s"
+            )
+
+
+        # =================================================
+        # คำอธิบาย + คำแนะนำ
+        # =================================================
+
+        desc_col, rec_col = st.columns(2)
+
+
+        with desc_col:
+
+            st.markdown(
+                f"""
+                <div class="info-card">
+
+                <h3>📌 คำอธิบายผล</h3>
+
+                <p>
+                {screening['description']}
+                </p>
+
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+
+        with rec_col:
+
+            st.markdown(
+                f"""
+                <div class="warning-card">
+
+                <h3>💡 คำแนะนำ</h3>
+
+                <p>
+                {screening['recommendation']}
+                </p>
+
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+
+        # =================================================
+        # ส่วนที่ 2: กราฟ
+        # =================================================
+
+        st.divider()
+
+        st.markdown(
+            '<div class="section-title">📈 การเคลื่อนไหวของข้อต่อ</div>',
+            unsafe_allow_html=True
+        )
+
+
+        # =================================================
+        # Knee
+        # =================================================
 
         fig_knee = px.line(
 
@@ -801,8 +1214,16 @@ if uploaded_file is not None:
                 "Time (s)": "เวลา (วินาที)"
             },
 
-            title="Left vs Right Knee Angle"
+            title="🦵 Knee Angle"
         )
+
+
+        fig_knee.update_layout(
+            hovermode="x unified",
+            legend_title_text="",
+            height=420
+        )
+
 
         st.plotly_chart(
             fig_knee,
@@ -810,13 +1231,9 @@ if uploaded_file is not None:
         )
 
 
-        # =====================================================
-        # 19. กราฟ Hip
-        # =====================================================
-
-        st.subheader(
-            "🦿 การเปลี่ยนแปลงมุมสะโพก"
-        )
+        # =================================================
+        # Hip
+        # =================================================
 
         fig_hip = px.line(
 
@@ -835,8 +1252,16 @@ if uploaded_file is not None:
                 "Time (s)": "เวลา (วินาที)"
             },
 
-            title="Left vs Right Hip Angle"
+            title="🦿 Hip Angle"
         )
+
+
+        fig_hip.update_layout(
+            hovermode="x unified",
+            legend_title_text="",
+            height=420
+        )
+
 
         st.plotly_chart(
             fig_hip,
@@ -844,13 +1269,9 @@ if uploaded_file is not None:
         )
 
 
-        # =====================================================
-        # 20. กราฟ Ankle
-        # =====================================================
-
-        st.subheader(
-            "🦶 การเปลี่ยนแปลงมุมข้อเท้า"
-        )
+        # =================================================
+        # Ankle
+        # =================================================
 
         fig_ankle = px.line(
 
@@ -869,8 +1290,16 @@ if uploaded_file is not None:
                 "Time (s)": "เวลา (วินาที)"
             },
 
-            title="Left vs Right Ankle Angle"
+            title="🦶 Ankle Angle"
         )
+
+
+        fig_ankle.update_layout(
+            hovermode="x unified",
+            legend_title_text="",
+            height=420
+        )
+
 
         st.plotly_chart(
             fig_ankle,
@@ -878,9 +1307,17 @@ if uploaded_file is not None:
         )
 
 
-        # =====================================================
-        # 21. คำนวณสถิติ Knee
-        # =====================================================
+        # =================================================
+        # ส่วนที่ 3: สรุป Knee
+        # =================================================
+
+        st.divider()
+
+        st.markdown(
+            '<div class="section-title">🦵 สรุปการเคลื่อนไหวของเข่า</div>',
+            unsafe_allow_html=True
+        )
+
 
         mean_left_knee = df[
             "Left Knee Angle"
@@ -915,10 +1352,6 @@ if uploaded_file is not None:
         )
 
 
-        # =====================================================
-        # 22. Symmetry Index Knee
-        # =====================================================
-
         si_mean_knee = calculate_symmetry_index(
             mean_left_knee,
             mean_right_knee
@@ -930,149 +1363,51 @@ if uploaded_file is not None:
         )
 
 
-        # =====================================================
-        # 23. Dashboard สรุปมุมเข่า
-        # =====================================================
-
-        st.subheader(
-            "📈 สรุปผลการวิเคราะห์มุมเข่า"
-        )
-
-        col1, col2, col3, col4 = st.columns(4)
+        k1, k2, k3, k4 = st.columns(4)
 
 
-        with col1:
+        with k1:
 
             st.metric(
                 "เข่าซ้ายเฉลี่ย",
                 f"{mean_left_knee:.2f}°"
             )
 
-            st.metric(
-                "เข่าซ้ายสูงสุด",
-                f"{max_left_knee:.2f}°"
-            )
 
-
-        with col2:
+        with k2:
 
             st.metric(
                 "เข่าขวาเฉลี่ย",
                 f"{mean_right_knee:.2f}°"
             )
 
+
+        with k3:
+
             st.metric(
-                "เข่าขวาสูงสุด",
-                f"{max_right_knee:.2f}°"
+                "ROM ซ้าย / ขวา",
+                f"{rom_left_knee:.1f}° / "
+                f"{rom_right_knee:.1f}°"
             )
 
 
-        with col3:
+        with k4:
 
             st.metric(
-                "ROM ซ้าย",
-                f"{rom_left_knee:.2f}°"
-            )
-
-            st.metric(
-                "ROM ขวา",
-                f"{rom_right_knee:.2f}°"
-            )
-
-
-        with col4:
-
-            st.metric(
-                "Symmetry Index",
+                "Knee SI",
                 f"{si_mean_knee:.2f}%"
             )
 
-            st.metric(
-                "SI สูงสุด",
-                f"{si_max_knee:.2f}%"
-            )
 
-
-        # =====================================================
-        # 24. Gait Screening
-        # =====================================================
-
-        screening = calculate_gait_screening(
-            df
-        )
-
+        # =================================================
+        # ส่วนที่ 4: SI รายข้อต่อ
+        # =================================================
 
         st.divider()
 
-        st.subheader(
-            "🩺 Gait Screening"
-        )
-
-        st.caption(
-            "การประเมินนี้เป็นการคัดกรองเบื้องต้นจากข้อมูล "
-            "ความสมมาตรของมุมข้อต่อ ไม่ใช่การวินิจฉัยทางการแพทย์"
-        )
-
-
-        # =====================================================
-        # 25. สถานะ + Score
-        # =====================================================
-
-        score_col1, score_col2 = st.columns(
-            [1, 2]
-        )
-
-
-        with score_col1:
-
-            st.metric(
-                "Gait Screening Score",
-                f"{screening['score']:.1f}/100"
-            )
-
-
-        with score_col2:
-
-            st.markdown(
-                f"### ผลการคัดกรอง: {screening['status']}"
-            )
-
-
-        # =====================================================
-        # 26. Progress Score
-        # =====================================================
-
-        st.progress(
-            int(screening["score"])
-        )
-
-
-        # =====================================================
-        # 27. คำอธิบายผล
-        # =====================================================
-
-        st.info(
-            f"📌 **คำอธิบายผล**\n\n"
-            f"{screening['description']}"
-        )
-
-
-        # =====================================================
-        # 28. ข้อเสนอแนะ
-        # =====================================================
-
-        st.warning(
-            f"💡 **ข้อเสนอแนะ**\n\n"
-            f"{screening['recommendation']}"
-        )
-
-
-        # =====================================================
-        # 29. ตาราง Symmetry Index
-        # =====================================================
-
-        st.subheader(
-            "📊 Symmetry Index รายข้อต่อ"
+        st.markdown(
+            '<div class="section-title">🔎 Symmetry Index รายข้อต่อ</div>',
+            unsafe_allow_html=True
         )
 
 
@@ -1099,17 +1434,22 @@ if uploaded_file is not None:
 
 
         st.dataframe(
-            si_df,
-            use_container_width=True
+            si_df.style.format({
+                "Symmetry Index (%)": "{:.2f}",
+                "ROM Symmetry Index (%)": "{:.2f}"
+            }),
+            use_container_width=True,
+            hide_index=True
         )
 
 
-        # =====================================================
-        # 30. Dashboard Screening รายข้อต่อ
-        # =====================================================
+        # =================================================
+        # ส่วนที่ 5: Dashboard รายข้อต่อ
+        # =================================================
 
-        st.subheader(
-            "🔎 รายละเอียดการคัดกรอง"
+        st.markdown(
+            '<div class="section-title">🧩 รายละเอียดแต่ละข้อต่อ</div>',
+            unsafe_allow_html=True
         )
 
 
@@ -1118,9 +1458,7 @@ if uploaded_file is not None:
 
         with c1:
 
-            st.markdown(
-                "### 🦿 Hip"
-            )
+            st.markdown("### 🦿 Hip")
 
             st.metric(
                 "Symmetry Index",
@@ -1135,9 +1473,7 @@ if uploaded_file is not None:
 
         with c2:
 
-            st.markdown(
-                "### 🦵 Knee"
-            )
+            st.markdown("### 🦵 Knee")
 
             st.metric(
                 "Symmetry Index",
@@ -1152,9 +1488,7 @@ if uploaded_file is not None:
 
         with c3:
 
-            st.markdown(
-                "### 🦶 Ankle"
-            )
+            st.markdown("### 🦶 Ankle")
 
             st.metric(
                 "Symmetry Index",
@@ -1167,12 +1501,15 @@ if uploaded_file is not None:
             )
 
 
-        # =====================================================
-        # 31. ตารางสรุปมุมข้อต่อ
-        # =====================================================
+        # =================================================
+        # ส่วนที่ 6: ตารางสรุป
+        # =================================================
 
-        st.subheader(
-            "📊 ตารางสรุปมุมข้อต่อ"
+        st.divider()
+
+        st.markdown(
+            '<div class="section-title">📋 ตารางสรุปมุมข้อต่อ</div>',
+            unsafe_allow_html=True
         )
 
 
@@ -1252,17 +1589,26 @@ if uploaded_file is not None:
 
 
         st.dataframe(
-            summary_df,
-            use_container_width=True
+            summary_df.style.format({
+                "ซ้ายเฉลี่ย (°)": "{:.2f}",
+                "ขวาเฉลี่ย (°)": "{:.2f}",
+                "ซ้าย ROM (°)": "{:.2f}",
+                "ขวา ROM (°)": "{:.2f}"
+            }),
+            use_container_width=True,
+            hide_index=True
         )
 
 
-        # =====================================================
-        # 32. เกณฑ์การแปลผล
-        # =====================================================
+        # =================================================
+        # ส่วนที่ 7: เกณฑ์การแปลผล
+        # =================================================
 
-        st.subheader(
-            "📖 เกณฑ์การแปลผล Gait Screening"
+        st.divider()
+
+        st.markdown(
+            '<div class="section-title">📖 เกณฑ์การแปลผล</div>',
+            unsafe_allow_html=True
         )
 
 
@@ -1282,7 +1628,7 @@ if uploaded_file is not None:
 
             "ความหมาย": [
 
-                "ความแตกต่างซ้าย-ขวาอยู่ในระดับต่ำ",
+                "ความแตกต่างซ้าย–ขวาอยู่ในระดับต่ำ",
 
                 "มีความแตกต่างระดับปานกลาง",
 
@@ -1293,30 +1639,43 @@ if uploaded_file is not None:
 
         st.dataframe(
             interpretation_df,
-            use_container_width=True
+            use_container_width=True,
+            hide_index=True
         )
 
 
-        # =====================================================
-        # 33. คำเตือน
-        # =====================================================
+        # =================================================
+        # ส่วนที่ 8: คำเตือน
+        # =================================================
 
         st.warning(
-            "⚠️ **หมายเหตุสำคัญ:** "
-            "Gait Screening Score และเกณฑ์การแปลผลนี้ "
-            "เป็นการประเมินเชิงคัดกรองจากข้อมูลวิดีโอและ "
-            "Symmetry Index เท่านั้น ไม่สามารถใช้ยืนยันหรือ "
-            "วินิจฉัยโรคหรือความผิดปกติทางการแพทย์ได้ "
-            "ผลลัพธ์อาจได้รับผลกระทบจากมุมกล้อง แสง เสื้อผ้า "
-            "คุณภาพวิดีโอ และความแม่นยำของระบบตรวจจับท่าทาง"
+            """
+            ⚠️ **คำเตือนสำคัญ**
+
+            Gait Screening Score และเกณฑ์การแปลผลในระบบนี้
+            ใช้สำหรับการคัดกรองเบื้องต้นจากข้อมูลวิดีโอและ
+            Symmetry Index เท่านั้น
+
+            ไม่สามารถใช้ยืนยันหรือวินิจฉัยโรค
+            หรือความผิดปกติทางการแพทย์ได้
+
+            ผลลัพธ์อาจได้รับผลกระทบจากมุมกล้อง แสง เสื้อผ้า
+            การบังส่วนต่าง ๆ ของร่างกาย คุณภาพวิดีโอ
+            และความแม่นยำของระบบตรวจจับท่าทาง
+            """
         )
 
 
-        # =====================================================
-        # 34. ดาวน์โหลด CSV
-        # =====================================================
+        # =================================================
+        # ส่วนที่ 9: ดาวน์โหลดข้อมูล
+        # =================================================
 
         st.divider()
+
+        st.markdown(
+            '<div class="section-title">📥 ส่งออกข้อมูล</div>',
+            unsafe_allow_html=True
+        )
 
 
         csv_data = df.to_csv(
@@ -1332,12 +1691,27 @@ if uploaded_file is not None:
 
             file_name="gait_analysis_data.csv",
 
-            mime="text/csv"
+            mime="text/csv",
+
+            use_container_width=True
         )
 
-    else:
 
-        st.warning(
-            "⚠️ ไม่พบโครงร่างร่างกายจากวิดีโอ "
-            "กรุณาลองใช้วิดีโอที่เห็นร่างกายชัดเจนขึ้น"
+        # =================================================
+        # Footer
+        # =================================================
+
+        st.markdown(
+            """
+            <div class="footer-note">
+
+            🦶 **Video Gait Analysis System**
+
+            ระบบนี้จัดทำขึ้นเพื่อการศึกษาและการคัดกรองเบื้องต้น
+            ผลลัพธ์ควรพิจารณาร่วมกับการสังเกตทางคลินิก
+            และการประเมินโดยผู้เชี่ยวชาญเมื่อจำเป็น
+
+            </div>
+            """,
+            unsafe_allow_html=True
         )
