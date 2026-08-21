@@ -303,16 +303,6 @@ st.markdown(
             <span class="brand-icon">▣</span>
             Medical Gait AI
         </div>
-
-        <div class="nav-items">
-            <span class="nav-active">Dashboard</span>
-            <span>Patient Data</span>
-            <span>Reports</span>
-            <span>Settings</span>
-        </div>
-
-        <div class="nav-user">👤</div>
-    </div>
     """,
     unsafe_allow_html=True
 )
