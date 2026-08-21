@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 import mediapipe as mp
 
@@ -26,104 +27,265 @@ st.set_page_config(
     page_title="ระบบวิเคราะห์ท่าเดิน",
     page_icon="🦶",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 
 # =========================================================
-# 3. CSS สำหรับ UI
+# 3. CSS สำหรับ UI - Dark Medical AI Dashboard
 # =========================================================
 
 st.markdown(
     """
     <style>
-
-    .main {
-        background-color: #f7f9fc;
+    /* ---------- App background ---------- */
+    .stApp {
+        background:
+            radial-gradient(circle at top, #10233a 0%, #071421 42%, #040b13 100%);
+        color: #f8fafc;
     }
 
     .block-container {
-        padding-top: 2rem;
+        max-width: 1500px;
+        padding-top: 1.1rem;
         padding-bottom: 3rem;
     }
 
-    .main-title {
-        font-size: 2.4rem;
+    /* ---------- Hide Streamlit chrome for app-like look ---------- */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header[data-testid="stHeader"] {
+        background: rgba(0,0,0,0);
+    }
+
+    /* ---------- Top navigation ---------- */
+    .top-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 16px 24px;
+        margin-bottom: 24px;
+        background: rgba(5, 17, 30, 0.88);
+        border: 1px solid rgba(125, 211, 252, 0.12);
+        border-radius: 14px;
+        box-shadow: 0 10px 35px rgba(0,0,0,0.22);
+        backdrop-filter: blur(10px);
+    }
+
+    .brand {
+        font-size: 24px;
         font-weight: 800;
-        color: #17324d;
-        margin-bottom: 0.2rem;
+        color: #eef8ff;
+        white-space: nowrap;
     }
 
-    .subtitle {
-        color: #64748b;
-        font-size: 1rem;
-        margin-bottom: 1.5rem;
+    .brand-icon {
+        color: #22d3ee;
+        margin-right: 8px;
     }
 
+    .nav-items {
+        display: flex;
+        gap: 32px;
+        align-items: center;
+        color: #94a3b8;
+        font-size: 15px;
+    }
+
+    .nav-active {
+        color: #ffffff;
+        border-bottom: 2px solid #22d3ee;
+        padding-bottom: 7px;
+        text-shadow: 0 0 14px rgba(34,211,238,0.35);
+    }
+
+    .nav-user {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: rgba(148,163,184,0.16);
+        border: 1px solid rgba(148,163,184,0.20);
+        font-size: 22px;
+    }
+
+    /* ---------- Section heading ---------- */
     .section-title {
-        font-size: 1.35rem;
-        font-weight: 700;
-        color: #17324d;
+        font-size: 1.25rem;
+        font-weight: 750;
+        color: #f8fafc;
         margin-top: 1rem;
         margin-bottom: 0.8rem;
     }
 
-    .screening-card {
-        padding: 1.5rem;
-        border-radius: 18px;
-        background: white;
-        border: 1px solid #e5e7eb;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    .section-subtitle {
+        color: #94a3b8;
         margin-bottom: 1rem;
+        font-size: 0.92rem;
+    }
+
+    /* ---------- Medical cards ---------- */
+    .med-card {
+        background: linear-gradient(
+            145deg,
+            rgba(20, 46, 72, 0.96),
+            rgba(7, 23, 39, 0.98)
+        );
+        border: 1px solid rgba(103, 232, 249, 0.16);
+        border-radius: 14px;
+        padding: 20px;
+        box-shadow: 0 14px 35px rgba(0, 0, 0, 0.28);
+        margin-bottom: 16px;
+    }
+
+    .card-title {
+        font-size: 20px;
+        font-weight: 750;
+        color: #f8fafc;
+        padding-bottom: 11px;
+        margin-bottom: 15px;
+        border-bottom: 1px solid rgba(148,163,184,0.17);
     }
 
     .score-number {
-        font-size: 3rem;
-        font-weight: 800;
-        color: #17324d;
+        font-size: 58px;
+        line-height: 1;
+        font-weight: 850;
         text-align: center;
+        color: #ffffff;
+        margin: 12px 0 8px;
     }
 
-    .score-label {
+    .score-caption {
         text-align: center;
-        color: #64748b;
-        font-size: 0.95rem;
+        color: #94a3b8;
+        font-size: 14px;
     }
 
-    .normal-card {
-        padding: 1.2rem;
-        border-radius: 16px;
-        background: #ecfdf5;
-        border: 1px solid #86efac;
+    .screening-status {
+        text-align: center;
+        font-size: 21px;
+        font-weight: 700;
+        color: #e2e8f0;
+        margin-top: 10px;
     }
 
-    .warning-card {
-        padding: 1.2rem;
-        border-radius: 16px;
-        background: #fffbeb;
-        border: 1px solid #fcd34d;
-    }
-
-    .danger-card {
-        padding: 1.2rem;
-        border-radius: 16px;
-        background: #fef2f2;
-        border: 1px solid #fca5a5;
-    }
-
-    .info-card {
-        padding: 1.2rem;
-        border-radius: 16px;
-        background: #eff6ff;
-        border: 1px solid #93c5fd;
-    }
-
-    .footer-note {
-        color: #64748b;
-        font-size: 0.85rem;
+    .small-muted {
+        color: #94a3b8;
+        font-size: 13px;
         line-height: 1.6;
     }
 
+    /* ---------- Status chips/cards ---------- */
+    .status-good, .status-watch, .status-alert {
+        padding: 14px 16px;
+        border-radius: 12px;
+        margin-bottom: 10px;
+        line-height: 1.5;
+        border: 1px solid;
+    }
+    .status-good {
+        background: rgba(16,185,129,0.10);
+        border-color: rgba(52,211,153,0.28);
+        color: #d1fae5;
+    }
+    .status-watch {
+        background: rgba(245,158,11,0.10);
+        border-color: rgba(251,191,36,0.30);
+        color: #fef3c7;
+    }
+    .status-alert {
+        background: rgba(239,68,68,0.10);
+        border-color: rgba(248,113,113,0.30);
+        color: #fee2e2;
+    }
+
+    /* ---------- Metrics ---------- */
+    [data-testid="stMetric"] {
+        background: linear-gradient(
+            145deg,
+            rgba(18, 43, 68, 0.96),
+            rgba(7, 25, 43, 0.96)
+        );
+        border: 1px solid rgba(103,232,249,0.13);
+        padding: 15px;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    }
+
+    [data-testid="stMetricLabel"] {
+        color: #94a3b8;
+    }
+
+    [data-testid="stMetricValue"] {
+        color: #f8fafc;
+    }
+
+    /* ---------- Upload box ---------- */
+    [data-testid="stFileUploader"] {
+        background: rgba(10, 31, 50, 0.88);
+        border: 1px dashed rgba(34,211,238,0.48);
+        border-radius: 14px;
+        padding: 16px;
+    }
+
+    /* ---------- Alerts ---------- */
+    [data-testid="stAlert"] {
+        border-radius: 12px;
+        border: 1px solid rgba(148,163,184,0.14);
+    }
+
+    /* ---------- Tabs ---------- */
+    button[data-baseweb="tab"] {
+        color: #94a3b8;
+    }
+
+    button[data-baseweb="tab"][aria-selected="true"] {
+        color: #f8fafc;
+    }
+
+    /* ---------- Dataframe ---------- */
+    [data-testid="stDataFrame"] {
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid rgba(103,232,249,0.10);
+    }
+
+    /* ---------- Download button ---------- */
+    .stDownloadButton button {
+        width: 100%;
+        min-height: 46px;
+        border-radius: 10px;
+        border: 1px solid rgba(34,211,238,0.52);
+        background: linear-gradient(90deg, #0369a1, #0891b2);
+        color: white;
+        font-weight: 750;
+    }
+
+    .stDownloadButton button:hover {
+        border-color: #67e8f9;
+        color: white;
+    }
+
+    /* ---------- Footer ---------- */
+    .footer-note {
+        margin-top: 22px;
+        padding: 18px;
+        color: #94a3b8;
+        font-size: 0.84rem;
+        line-height: 1.7;
+        border-top: 1px solid rgba(148,163,184,0.12);
+    }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 900px) {
+        .nav-items { display: none; }
+        .brand { font-size: 19px; }
+        .top-nav { padding: 13px 16px; }
+        .score-number { font-size: 44px; }
+    }
     </style>
     """,
     unsafe_allow_html=True
@@ -131,18 +293,37 @@ st.markdown(
 
 
 # =========================================================
-# 4. Header
+# 4. Header / Navigation
 # =========================================================
 
 st.markdown(
-    '<div class="main-title">🦶 ระบบวิเคราะห์ท่าเดินจากวิดีโอ</div>',
+    """
+    <div class="top-nav">
+        <div class="brand">
+            <span class="brand-icon">▣</span>
+            Medical Gait AI
+        </div>
+
+        <div class="nav-items">
+            <span class="nav-active">Dashboard</span>
+            <span>Patient Data</span>
+            <span>Reports</span>
+            <span>Settings</span>
+        </div>
+
+        <div class="nav-user">👤</div>
+    </div>
+    """,
     unsafe_allow_html=True
 )
 
 st.markdown(
-    '<div class="subtitle">'
-    'Video Gait Analysis System | '
-    'วิเคราะห์มุมข้อต่อ ความสมมาตร และ Gait Screening'
+    '<div class="section-title">Video Gait Analysis Dashboard</div>',
+    unsafe_allow_html=True
+)
+st.markdown(
+    '<div class="section-subtitle">'
+    'วิเคราะห์มุมข้อต่อ ความสมมาตร ROM และ Gait Screening จากวิดีโอ'
     '</div>',
     unsafe_allow_html=True
 )
@@ -630,6 +811,8 @@ if uploaded_file is not None:
 
     frames_data = []
 
+    last_pose_image = None
+
     frame_count = 0
 
     st_frame = st.empty()
@@ -903,6 +1086,9 @@ if uploaded_file is not None:
                     )
                 )
 
+                # เก็บเฟรมล่าสุดที่ตรวจพบโครงร่างสำหรับ Dashboard
+                last_pose_image = image.copy()
+
 
             # =================================================
             # Progress
@@ -992,146 +1178,312 @@ if uploaded_file is not None:
 
 
         # =================================================
-        # ส่วนที่ 1: Screening
+        # ส่วนที่ 1: Medical AI Dashboard
         # =================================================
 
-        screening = calculate_gait_screening(
-            df
-        )
-
+        screening = calculate_gait_screening(df)
 
         st.divider()
 
         st.markdown(
-            '<div class="section-title">🩺 ผลการคัดกรองการเดิน</div>',
+            '<div class="section-title">🩺 Medical Gait Dashboard</div>',
             unsafe_allow_html=True
         )
 
-        st.caption(
-            "ผลนี้เป็นการคัดกรองจากความแตกต่างของมุมข้อต่อ "
-            "ซ้าย–ขวา ไม่ใช่การวินิจฉัยทางการแพทย์"
+        st.markdown(
+            '<div class="section-subtitle">'
+            'สรุปผลจากข้อมูลการเคลื่อนไหวที่ตรวจจับได้จากวิดีโอ '
+            'ผลนี้เป็นการคัดกรองเบื้องต้น ไม่ใช่การวินิจฉัยทางการแพทย์'
+            '</div>',
+            unsafe_allow_html=True
         )
 
-
-        # =================================================
-        # Screening Score
-        # =================================================
-
-        score_col1, score_col2 = st.columns(
-            [1, 2]
+        left_col, center_col, right_col = st.columns(
+            [1.05, 1.35, 1.05],
+            gap="medium"
         )
 
-
-        with score_col1:
+        # -------------------------------------------------
+        # LEFT: Gait Analysis
+        # -------------------------------------------------
+        with left_col:
 
             st.markdown(
-                f"""
-                <div class="screening-card">
-                    <div class="score-number">
-                        {screening['score']:.1f}
-                    </div>
-                    <div class="score-label">
-                        Gait Screening Score / 100
+                """
+                <div class="med-card">
+                    <div class="card-title">Gait Analysis</div>
+                    <div class="small-muted">
+                        ภาพโครงร่างจากเฟรมล่าสุดที่ระบบตรวจจับได้
                     </div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
+            if last_pose_image is not None:
+                st.image(
+                    last_pose_image,
+                    channels="RGB",
+                    use_container_width=True
+                )
+            else:
+                st.info("ไม่พบภาพโครงร่างสำหรับแสดงผล")
 
-            st.progress(
-                int(
-                    round(
-                        screening["score"]
-                    )
+            st.metric(
+                "Hip Symmetry",
+                f"{screening['hip_si']:.2f}%"
+            )
+
+            st.metric(
+                "Knee Symmetry",
+                f"{screening['knee_si']:.2f}%"
+            )
+
+            st.metric(
+                "Ankle Symmetry",
+                f"{screening['ankle_si']:.2f}%"
+            )
+
+        # -------------------------------------------------
+        # CENTER: Symmetry Score + Stability chart
+        # -------------------------------------------------
+        with center_col:
+
+            st.markdown(
+                f"""
+                <div class="med-card">
+                    <div class="card-title">Symmetry Score</div>
+                    <div class="score-number">
+                        {screening['score']:.0f}%
+                    </div>
+                    <div class="screening-status">
+                        {screening['status']}
+                    </div>
+                    <div class="score-caption">
+                        Overall SI {screening['overall_si']:.2f}% ·
+                        Overall ROM SI {screening['overall_rom_si']:.2f}%
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+            fig_gauge = go.Figure(
+                go.Indicator(
+                    mode="gauge+number",
+                    value=screening["score"],
+                    number={
+                        "suffix": "%",
+                        "font": {"size": 48}
+                    },
+                    gauge={
+                        "axis": {
+                            "range": [0, 100],
+                            "tickcolor": "#94a3b8"
+                        },
+                        "bar": {
+                            "color": "#22d3ee",
+                            "thickness": 0.22
+                        },
+                        "bgcolor": "rgba(255,255,255,0.04)",
+                        "borderwidth": 0,
+                        "steps": [
+                            {
+                                "range": [0, 70],
+                                "color": "rgba(239,68,68,0.40)"
+                            },
+                            {
+                                "range": [70, 85],
+                                "color": "rgba(245,158,11,0.42)"
+                            },
+                            {
+                                "range": [85, 100],
+                                "color": "rgba(34,197,94,0.42)"
+                            }
+                        ]
+                    }
                 )
             )
 
+            fig_gauge.update_layout(
+                height=300,
+                margin=dict(l=20, r=20, t=25, b=10),
+                paper_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#f8fafc")
+            )
 
-        with score_col2:
+            st.plotly_chart(
+                fig_gauge,
+                use_container_width=True,
+                config={"displayModeBar": False}
+            )
 
-            if screening["level"] == "normal":
+            joint_si_df = pd.DataFrame({
+                "Joint": ["Hip", "Knee", "Ankle"],
+                "Symmetry Index (%)": [
+                    screening["hip_si"],
+                    screening["knee_si"],
+                    screening["ankle_si"]
+                ]
+            })
 
-                st.markdown(
-                    f"""
-                    <div class="normal-card">
-                        <h2>🟢 ปกติ</h2>
-                        <p>
-                        {screening['description']}
-                        </p>
+            fig_joint_si = px.bar(
+                joint_si_df,
+                x="Joint",
+                y="Symmetry Index (%)",
+                text_auto=".1f",
+                title="Joint Symmetry Index"
+            )
+
+            fig_joint_si.add_hline(
+                y=5,
+                line_dash="dash",
+                line_color="#facc15",
+                annotation_text="5%",
+                annotation_position="top left"
+            )
+
+            fig_joint_si.add_hline(
+                y=10,
+                line_dash="dash",
+                line_color="#fb7185",
+                annotation_text="10%",
+                annotation_position="top right"
+            )
+
+            fig_joint_si.update_layout(
+                height=285,
+                margin=dict(l=20, r=20, t=55, b=25),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(255,255,255,0.02)",
+                font=dict(color="#e2e8f0"),
+                title_font=dict(color="#f8fafc"),
+                xaxis=dict(
+                    title="",
+                    gridcolor="rgba(148,163,184,0.10)"
+                ),
+                yaxis=dict(
+                    title="SI (%)",
+                    gridcolor="rgba(148,163,184,0.10)"
+                ),
+                showlegend=False
+            )
+
+            fig_joint_si.update_traces(
+                marker_color="#22d3ee"
+            )
+
+            st.plotly_chart(
+                fig_joint_si,
+                use_container_width=True,
+                config={"displayModeBar": False}
+            )
+
+        # -------------------------------------------------
+        # RIGHT: Recommendations
+        # -------------------------------------------------
+        with right_col:
+
+            st.markdown(
+                """
+                <div class="med-card">
+                    <div class="card-title">Recommendations</div>
+                    <div class="small-muted">
+                        คำแนะนำจากค่าความสมมาตรที่ระบบคำนวณได้
                     </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
-            elif screening["level"] == "warning":
+            def show_joint_status(label, value):
+                if value < 5:
+                    st.markdown(
+                        f'<div class="status-good">✓ <b>{label}</b><br>'
+                        f'SI {value:.2f}% · ความแตกต่างอยู่ในระดับต่ำ</div>',
+                        unsafe_allow_html=True
+                    )
+                elif value < 10:
+                    st.markdown(
+                        f'<div class="status-watch">△ <b>{label}</b><br>'
+                        f'SI {value:.2f}% · ควรติดตามเพิ่มเติม</div>',
+                        unsafe_allow_html=True
+                    )
+                else:
+                    st.markdown(
+                        f'<div class="status-alert">⚠ <b>{label}</b><br>'
+                        f'SI {value:.2f}% · พบความแตกต่างค่อนข้างมาก</div>',
+                        unsafe_allow_html=True
+                    )
 
-                st.markdown(
-                    f"""
-                    <div class="warning-card">
-                        <h2>🟡 ควรประเมินเพิ่มเติม</h2>
-                        <p>
-                        {screening['description']}
-                        </p>
+            show_joint_status(
+                "Hip",
+                screening["hip_si"]
+            )
+
+            show_joint_status(
+                "Knee",
+                screening["knee_si"]
+            )
+
+            show_joint_status(
+                "Ankle",
+                screening["ankle_si"]
+            )
+
+            st.markdown(
+                f"""
+                <div class="med-card">
+                    <div class="card-title">คำแนะนำโดยรวม</div>
+                    <div class="small-muted">
+                        {screening['recommendation']}
                     </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
-            else:
+            st.markdown(
+                """
+                <div class="status-watch">
+                    ⚠ <b>ข้อควรระวัง</b><br>
+                    ผลลัพธ์นี้เป็นการคัดกรองจากวิดีโอ 2D และอาจได้รับ
+                    ผลกระทบจากมุมกล้อง แสง เสื้อผ้า การบังร่างกาย
+                    และคุณภาพวิดีโอ
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
-                st.markdown(
-                    f"""
-                    <div class="danger-card">
-                        <h2>🔴 พบความแตกต่างมาก</h2>
-                        <p>
-                        {screening['description']}
-                        </p>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-
-        # =================================================
-        # Overall Metrics
-        # =================================================
-
+        # -------------------------------------------------
+        # Summary metrics
+        # -------------------------------------------------
         st.markdown(
             '<div class="section-title">📊 ตัวชี้วัดหลัก</div>',
             unsafe_allow_html=True
         )
 
-
         m1, m2, m3, m4 = st.columns(4)
 
-
         with m1:
-
             st.metric(
                 "Overall SI",
                 f"{screening['overall_si']:.2f}%"
             )
 
-
         with m2:
-
             st.metric(
                 "Overall ROM SI",
                 f"{screening['overall_rom_si']:.2f}%"
             )
 
-
         with m3:
-
             st.metric(
                 "Frames วิเคราะห์",
                 f"{len(df):,}"
             )
 
-
         with m4:
-
             st.metric(
                 "ระยะเวลาวิเคราะห์",
                 f"{df['Time (s)'].max():.1f} s"
@@ -1139,172 +1491,118 @@ if uploaded_file is not None:
 
 
         # =================================================
-        # คำอธิบาย + คำแนะนำ
-        # =================================================
-
-        desc_col, rec_col = st.columns(2)
-
-
-        with desc_col:
-
-            st.markdown(
-                f"""
-                <div class="info-card">
-
-                <h3>📌 คำอธิบายผล</h3>
-
-                <p>
-                {screening['description']}
-                </p>
-
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-
-        with rec_col:
-
-            st.markdown(
-                f"""
-                <div class="warning-card">
-
-                <h3>💡 คำแนะนำ</h3>
-
-                <p>
-                {screening['recommendation']}
-                </p>
-
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-
-        # =================================================
-        # ส่วนที่ 2: กราฟ
+        # ส่วนที่ 2: กราฟการเคลื่อนไหว
         # =================================================
 
         st.divider()
 
         st.markdown(
-            '<div class="section-title">📈 การเคลื่อนไหวของข้อต่อ</div>',
+            '<div class="section-title">📈 Joint Angle Over Time</div>',
             unsafe_allow_html=True
         )
 
+        st.markdown(
+            '<div class="section-subtitle">'
+            'เปรียบเทียบมุมข้อต่อด้านซ้ายและขวาตลอดช่วงเวลาของวิดีโอ'
+            '</div>',
+            unsafe_allow_html=True
+        )
 
-        # =================================================
         # Knee
-        # =================================================
-
         fig_knee = px.line(
-
             df,
-
             x="Time (s)",
-
             y=[
                 "Left Knee Angle",
                 "Right Knee Angle"
             ],
-
             labels={
                 "value": "มุม (องศา)",
                 "variable": "ข้าง",
                 "Time (s)": "เวลา (วินาที)"
             },
-
-            title="🦵 Knee Angle"
+            title="Knee Angle"
         )
 
-
-        fig_knee.update_layout(
-            hovermode="x unified",
-            legend_title_text="",
-            height=420
-        )
-
-
-        st.plotly_chart(
-            fig_knee,
-            use_container_width=True
-        )
-
-
-        # =================================================
         # Hip
-        # =================================================
-
         fig_hip = px.line(
-
             df,
-
             x="Time (s)",
-
             y=[
                 "Left Hip Angle",
                 "Right Hip Angle"
             ],
-
             labels={
                 "value": "มุม (องศา)",
                 "variable": "ข้าง",
                 "Time (s)": "เวลา (วินาที)"
             },
-
-            title="🦿 Hip Angle"
+            title="Hip Angle"
         )
 
-
-        fig_hip.update_layout(
-            hovermode="x unified",
-            legend_title_text="",
-            height=420
-        )
-
-
-        st.plotly_chart(
-            fig_hip,
-            use_container_width=True
-        )
-
-
-        # =================================================
         # Ankle
-        # =================================================
-
         fig_ankle = px.line(
-
             df,
-
             x="Time (s)",
-
             y=[
                 "Left Ankle Angle",
                 "Right Ankle Angle"
             ],
-
             labels={
                 "value": "มุม (องศา)",
                 "variable": "ข้าง",
                 "Time (s)": "เวลา (วินาที)"
             },
-
-            title="🦶 Ankle Angle"
+            title="Ankle Angle"
         )
 
+        for fig in [
+            fig_knee,
+            fig_hip,
+            fig_ankle
+        ]:
+            fig.update_layout(
+                hovermode="x unified",
+                legend_title_text="",
+                height=420,
+                margin=dict(l=30, r=20, t=55, b=35),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(255,255,255,0.02)",
+                font=dict(color="#e2e8f0"),
+                title_font=dict(color="#f8fafc"),
+                xaxis=dict(
+                    gridcolor="rgba(148,163,184,0.10)"
+                ),
+                yaxis=dict(
+                    gridcolor="rgba(148,163,184,0.10)"
+                )
+            )
 
-        fig_ankle.update_layout(
-            hovermode="x unified",
-            legend_title_text="",
-            height=420
+        tab_knee, tab_hip, tab_ankle = st.tabs(
+            [
+                "🦵 Knee",
+                "🦿 Hip",
+                "🦶 Ankle"
+            ]
         )
 
+        with tab_knee:
+            st.plotly_chart(
+                fig_knee,
+                use_container_width=True
+            )
 
-        st.plotly_chart(
-            fig_ankle,
-            use_container_width=True
-        )
+        with tab_hip:
+            st.plotly_chart(
+                fig_hip,
+                use_container_width=True
+            )
+
+        with tab_ankle:
+            st.plotly_chart(
+                fig_ankle,
+                use_container_width=True
+            )
 
 
         # =================================================
