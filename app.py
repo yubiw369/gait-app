@@ -24,8 +24,8 @@ mp_drawing_styles = mp.solutions.drawing_styles
 # =========================================================
 
 st.set_page_config(
-    page_title="ระบบวิเคราะห์ท่าเดิน",
-    page_icon="🦶",
+    page_title="Medical Gait AI | Gait Screening",
+    page_icon="🩺",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -38,392 +38,677 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* ---------- App background ---------- */
+    :root {
+        --bg-0: #071525;
+        --bg-1: #0b2035;
+        --bg-2: #10304d;
+        --panel: rgba(15, 42, 67, 0.88);
+        --panel-strong: rgba(17, 50, 79, 0.96);
+        --panel-soft: rgba(20, 58, 91, 0.62);
+        --line: rgba(125, 211, 252, 0.16);
+        --line-strong: rgba(103, 232, 249, 0.30);
+        --cyan: #22d3ee;
+        --cyan-soft: #67e8f9;
+        --blue: #60a5fa;
+        --violet: #a78bfa;
+        --green: #34d399;
+        --yellow: #facc15;
+        --orange: #fb923c;
+        --red: #fb7185;
+        --text: #f8fafc;
+        --muted: #a9bfd2;
+        --muted-2: #7894ac;
+    }
+
+    html, body, [class*="css"] {
+        font-family:
+            Inter, ui-sans-serif, system-ui, -apple-system,
+            BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
     .stApp {
+        color: var(--text);
         background:
-            radial-gradient(circle at top, #1a4164 0%, #0e2b46 42%, #081a2c 100%);
-        color: #f8fafc;
+            radial-gradient(
+                circle at 12% 0%,
+                rgba(34, 211, 238, 0.15),
+                transparent 27%
+            ),
+            radial-gradient(
+                circle at 92% 8%,
+                rgba(167, 139, 250, 0.12),
+                transparent 24%
+            ),
+            linear-gradient(
+                180deg,
+                #0a2035 0%,
+                #08192a 46%,
+                #061321 100%
+            );
+    }
+
+    /* subtle technology grid made with CSS only */
+    .stApp::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.13;
+        background-image:
+            linear-gradient(
+                rgba(125, 211, 252, 0.10) 1px,
+                transparent 1px
+            ),
+            linear-gradient(
+                90deg,
+                rgba(125, 211, 252, 0.10) 1px,
+                transparent 1px
+            );
+        background-size: 46px 46px;
+        mask-image: linear-gradient(
+            to bottom,
+            rgba(0,0,0,0.70),
+            rgba(0,0,0,0.10)
+        );
     }
 
     .block-container {
-        max-width: 1500px;
+        position: relative;
+        z-index: 1;
+        max-width: 1540px;
         padding-top: 1.1rem;
-        padding-bottom: 3rem;
+        padding-bottom: 3.5rem;
     }
 
-    /* ---------- Hide Streamlit chrome for app-like look ---------- */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
+
     header[data-testid="stHeader"] {
-        background: rgba(0,0,0,0);
+        background: transparent;
     }
 
-    /* ---------- Top navigation ---------- */
+    /* --------------------------------------------------
+       Top product bar
+       -------------------------------------------------- */
     .top-nav {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 24px;
-        padding: 16px 24px;
-        margin-bottom: 24px;
-        background: rgba(11, 35, 57, 0.90);
-        border: 1px solid rgba(125, 211, 252, 0.12);
-        border-radius: 14px;
-        box-shadow: 0 10px 35px rgba(0,0,0,0.22);
-        backdrop-filter: blur(10px);
+        gap: 18px;
+        min-height: 68px;
+        padding: 14px 20px;
+        margin-bottom: 16px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background:
+            linear-gradient(
+                135deg,
+                rgba(17, 51, 80, 0.94),
+                rgba(10, 31, 51, 0.92)
+            );
+        box-shadow:
+            0 18px 50px rgba(1, 10, 22, 0.28),
+            inset 0 1px 0 rgba(255,255,255,0.05);
+        backdrop-filter: blur(18px);
+    }
+
+    .brand-wrap {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .brand-mark {
+        width: 38px;
+        height: 38px;
+        display: grid;
+        place-items: center;
+        border-radius: 12px;
+        color: #03131d;
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: -0.4px;
+        background:
+            linear-gradient(
+                135deg,
+                var(--cyan-soft),
+                var(--blue)
+            );
+        box-shadow:
+            0 0 24px rgba(34, 211, 238, 0.25);
     }
 
     .brand {
-        font-size: 24px;
-        font-weight: 800;
-        color: #eef8ff;
+        color: #f8fbff;
+        font-size: 21px;
+        line-height: 1.05;
+        font-weight: 820;
+        letter-spacing: -0.3px;
+    }
+
+    .brand-sub {
+        color: var(--muted-2);
+        font-size: 10px;
+        margin-top: 4px;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        font-weight: 750;
+    }
+
+    .system-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 11px;
+        border-radius: 999px;
+        border: 1px solid rgba(52, 211, 153, 0.24);
+        color: #c7f9e4;
+        background: rgba(16, 185, 129, 0.08);
+        font-size: 11px;
+        font-weight: 760;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
         white-space: nowrap;
     }
 
-    .brand-icon {
-        color: #22d3ee;
-        margin-right: 8px;
-    }
-
-    .nav-items {
-        display: flex;
-        gap: 32px;
-        align-items: center;
-        color: #94a3b8;
-        font-size: 15px;
-    }
-
-    .nav-active {
-        color: #ffffff;
-        border-bottom: 2px solid #22d3ee;
-        padding-bottom: 7px;
-        text-shadow: 0 0 14px rgba(34,211,238,0.35);
-    }
-
-    .nav-user {
-        width: 42px;
-        height: 42px;
+    .system-dot {
+        width: 7px;
+        height: 7px;
         border-radius: 50%;
-        display: grid;
-        place-items: center;
-        background: rgba(148,163,184,0.16);
-        border: 1px solid rgba(148,163,184,0.20);
-        font-size: 22px;
+        background: var(--green);
+        box-shadow: 0 0 14px rgba(52, 211, 153, 0.75);
     }
 
-    /* ---------- Section heading ---------- */
-    .section-title {
-        font-size: 1.25rem;
-        font-weight: 750;
-        color: #f8fafc;
-        margin-top: 1rem;
-        margin-bottom: 0.8rem;
-    }
-
-    .section-subtitle {
-        color: #94a3b8;
-        margin-bottom: 1rem;
-        font-size: 0.92rem;
-    }
-
-    /* ---------- Medical cards ---------- */
-    .med-card {
-        background: linear-gradient(
-            145deg,
-            rgba(31, 73, 108, 0.96),
-            rgba(15, 44, 70, 0.98)
-        );
-        border: 1px solid rgba(103, 232, 249, 0.16);
-        border-radius: 14px;
-        padding: 20px;
-        box-shadow: 0 14px 35px rgba(0, 0, 0, 0.28);
-        margin-bottom: 16px;
-    }
-
-    .card-title {
-        font-size: 20px;
-        font-weight: 750;
-        color: #f8fafc;
-        padding-bottom: 11px;
-        margin-bottom: 15px;
-        border-bottom: 1px solid rgba(148,163,184,0.17);
-    }
-
-    .score-number {
-        font-size: 58px;
-        line-height: 1;
-        font-weight: 850;
-        text-align: center;
-        color: #ffffff;
-        margin: 12px 0 8px;
-    }
-
-    .score-caption {
-        text-align: center;
-        color: #94a3b8;
-        font-size: 14px;
-    }
-
-    .screening-status {
-        text-align: center;
-        font-size: 21px;
-        font-weight: 700;
-        color: #e2e8f0;
-        margin-top: 10px;
-    }
-
-    .small-muted {
-        color: #94a3b8;
-        font-size: 13px;
-        line-height: 1.6;
-    }
-
-    /* ---------- Status chips/cards ---------- */
-    .status-good, .status-watch, .status-alert {
-        padding: 14px 16px;
-        border-radius: 12px;
-        margin-bottom: 10px;
-        line-height: 1.5;
-        border: 1px solid;
-    }
-    .status-good {
-        background: rgba(16,185,129,0.10);
-        border-color: rgba(52,211,153,0.28);
-        color: #d1fae5;
-    }
-    .status-watch {
-        background: rgba(245,158,11,0.10);
-        border-color: rgba(251,191,36,0.30);
-        color: #fef3c7;
-    }
-    .status-alert {
-        background: rgba(239,68,68,0.10);
-        border-color: rgba(248,113,113,0.30);
-        color: #fee2e2;
-    }
-
-    /* ---------- Metrics ---------- */
-    [data-testid="stMetric"] {
-        background: linear-gradient(
-            145deg,
-            rgba(18, 43, 68, 0.96),
-            rgba(7, 25, 43, 0.96)
-        );
-        border: 1px solid rgba(103,232,249,0.13);
-        padding: 15px;
-        border-radius: 12px;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.18);
-    }
-
-    [data-testid="stMetricLabel"] {
-        color: #94a3b8;
-    }
-
-    [data-testid="stMetricValue"] {
-        color: #f8fafc;
-    }
-
-    /* ---------- Upload box ---------- */
-    [data-testid="stFileUploader"] {
-        background: rgba(18, 54, 84, 0.92);
-        border: 1px dashed rgba(34,211,238,0.48);
-        border-radius: 14px;
-        padding: 16px;
-    }
-
-    /* ---------- Alerts ---------- */
-    [data-testid="stAlert"] {
-        border-radius: 12px;
-        border: 1px solid rgba(148,163,184,0.14);
-    }
-
-    /* ---------- Tabs ---------- */
-    button[data-baseweb="tab"] {
-        color: #94a3b8;
-    }
-
-    button[data-baseweb="tab"][aria-selected="true"] {
-        color: #f8fafc;
-    }
-
-    /* ---------- Dataframe ---------- */
-    [data-testid="stDataFrame"] {
-        border-radius: 12px;
-        overflow: hidden;
-        border: 1px solid rgba(103,232,249,0.10);
-    }
-
-    /* ---------- Download button ---------- */
-    .stDownloadButton button {
-        width: 100%;
-        min-height: 46px;
-        border-radius: 10px;
-        border: 1px solid rgba(34,211,238,0.52);
-        background: linear-gradient(90deg, #0369a1, #0891b2);
-        color: white;
-        font-weight: 750;
-    }
-
-    .stDownloadButton button:hover {
-        border-color: #67e8f9;
-        color: white;
-    }
-
-    /* ---------- Footer ---------- */
-    .footer-note {
-        margin-top: 22px;
-        padding: 18px;
-        color: #94a3b8;
-        font-size: 0.84rem;
-        line-height: 1.7;
-        border-top: 1px solid rgba(148,163,184,0.12);
-    }
-
-
-    /* ---------- Hero / illustrative visuals ---------- */
+    /* --------------------------------------------------
+       Hero — text / telemetry only, no image
+       -------------------------------------------------- */
     .hero-panel {
         position: relative;
         overflow: hidden;
         display: grid;
-        grid-template-columns: 1.45fr 1fr;
-        align-items: center;
-        gap: 24px;
-        min-height: 225px;
-        padding: 30px 34px;
-        margin-bottom: 22px;
-        border-radius: 20px;
+        grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.75fr);
+        gap: 26px;
+        align-items: stretch;
+        padding: 32px;
+        margin-bottom: 18px;
+        border-radius: 22px;
+        border: 1px solid rgba(103, 232, 249, 0.20);
         background:
-            linear-gradient(120deg, rgba(28, 79, 118, 0.97), rgba(18, 58, 91, 0.95));
-        border: 1px solid rgba(103, 232, 249, 0.28);
+            linear-gradient(
+                125deg,
+                rgba(22, 66, 101, 0.93),
+                rgba(14, 42, 67, 0.94) 58%,
+                rgba(18, 39, 68, 0.94)
+            );
         box-shadow:
-            0 16px 42px rgba(0,0,0,0.22),
+            0 22px 60px rgba(0, 8, 20, 0.28),
             inset 0 1px 0 rgba(255,255,255,0.06);
     }
 
-    .hero-panel:before {
+    .hero-panel::before {
         content: "";
         position: absolute;
-        width: 360px;
-        height: 360px;
-        right: -120px;
-        top: -150px;
+        width: 420px;
+        height: 420px;
+        left: -170px;
+        top: -270px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(34,211,238,0.24), rgba(34,211,238,0));
+        background:
+            radial-gradient(
+                circle,
+                rgba(34, 211, 238, 0.18),
+                transparent 68%
+            );
+    }
+
+    .hero-main,
+    .telemetry-panel {
+        position: relative;
+        z-index: 1;
     }
 
     .hero-kicker {
-        color: #67e8f9;
-        font-size: 13px;
-        font-weight: 800;
-        letter-spacing: 1.3px;
+        color: var(--cyan-soft);
+        font-size: 11px;
+        font-weight: 840;
+        letter-spacing: 2px;
         text-transform: uppercase;
-        margin-bottom: 8px;
+        margin-bottom: 10px;
     }
 
     .hero-title {
+        max-width: 820px;
         color: #ffffff;
-        font-size: clamp(28px, 3vw, 42px);
-        font-weight: 850;
-        line-height: 1.1;
-        margin-bottom: 12px;
+        font-size: clamp(31px, 3.2vw, 48px);
+        font-weight: 860;
+        line-height: 1.06;
+        letter-spacing: -1.15px;
+        margin-bottom: 14px;
     }
 
     .hero-copy {
-        color: #cbd5e1;
-        font-size: 15px;
-        line-height: 1.7;
-        max-width: 720px;
+        max-width: 830px;
+        color: #c4d7e7;
+        font-size: 14px;
+        line-height: 1.75;
     }
 
     .hero-tags {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
-        margin-top: 16px;
+        margin-top: 20px;
     }
 
     .hero-tag {
-        padding: 7px 11px;
-        border-radius: 999px;
-        background: rgba(103,232,249,0.10);
-        border: 1px solid rgba(103,232,249,0.22);
-        color: #dffaff;
-        font-size: 12px;
-        font-weight: 700;
+        padding: 7px 10px;
+        border-radius: 8px;
+        border: 1px solid rgba(125, 211, 252, 0.17);
+        background: rgba(125, 211, 252, 0.06);
+        color: #d7edf8;
+        font-size: 10px;
+        font-weight: 760;
+        letter-spacing: 0.45px;
+        text-transform: uppercase;
     }
 
-    .hero-art {
+    .telemetry-panel {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 9px;
+        padding: 15px;
+        border-radius: 16px;
+        border: 1px solid rgba(125, 211, 252, 0.14);
+        background: rgba(5, 23, 39, 0.32);
+    }
+
+    .telemetry-title {
+        color: #7dd3fc;
+        font-size: 10px;
+        font-weight: 820;
+        letter-spacing: 1.6px;
+        text-transform: uppercase;
+        margin: 0 0 4px 2px;
+    }
+
+    .telemetry-row {
         display: flex;
         align-items: center;
-        justify-content: center;
-        min-height: 180px;
-        filter: drop-shadow(0 0 18px rgba(34,211,238,0.20));
+        justify-content: space-between;
+        gap: 12px;
+        padding: 11px 12px;
+        border-radius: 11px;
+        background: rgba(18, 55, 84, 0.55);
+        border: 1px solid rgba(148, 197, 224, 0.09);
     }
 
-    .visual-card {
-        padding: 16px;
-        border-radius: 16px;
-        background: linear-gradient(145deg, rgba(37,82,119,0.82), rgba(17,51,80,0.90));
-        border: 1px solid rgba(125,211,252,0.24);
-        box-shadow: 0 10px 28px rgba(0,0,0,0.20);
+    .telemetry-label {
+        color: var(--muted-2);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        font-weight: 760;
+    }
+
+    .telemetry-value {
+        color: #f1f8fd;
+        font-size: 11px;
+        font-weight: 790;
+        text-align: right;
+    }
+
+    /* --------------------------------------------------
+       Section headings
+       -------------------------------------------------- */
+    .section-title {
+        position: relative;
+        padding-left: 12px;
+        color: #f6fbff;
+        font-size: 1.05rem;
+        font-weight: 800;
+        letter-spacing: 0.1px;
+        margin-top: 1.25rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .section-title::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 3px;
+        bottom: 3px;
+        width: 3px;
+        border-radius: 999px;
+        background:
+            linear-gradient(
+                180deg,
+                var(--cyan),
+                var(--violet)
+            );
+        box-shadow: 0 0 15px rgba(34, 211, 238, 0.35);
+    }
+
+    .section-subtitle {
+        color: var(--muted);
+        margin-bottom: 1rem;
+        font-size: 0.88rem;
+        line-height: 1.65;
+    }
+
+    /* --------------------------------------------------
+       Cards
+       -------------------------------------------------- */
+    .med-card {
+        position: relative;
+        overflow: hidden;
+        padding: 19px;
         margin-bottom: 14px;
+        border-radius: 16px;
+        border: 1px solid rgba(125, 211, 252, 0.13);
+        background:
+            linear-gradient(
+                145deg,
+                rgba(19, 57, 88, 0.88),
+                rgba(9, 31, 51, 0.92)
+            );
+        box-shadow:
+            0 14px 34px rgba(1, 10, 22, 0.20),
+            inset 0 1px 0 rgba(255,255,255,0.035);
     }
 
-    .mini-visual-row {
+    .med-card::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 2px;
+        width: 38%;
+        background:
+            linear-gradient(
+                90deg,
+                rgba(34, 211, 238, 0.75),
+                transparent
+            );
+    }
+
+    .card-title {
+        color: #f8fbff;
+        font-size: 16px;
+        font-weight: 790;
+        padding-bottom: 10px;
+        margin-bottom: 13px;
+        border-bottom: 1px solid rgba(148, 197, 224, 0.10);
+    }
+
+    .small-muted {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.65;
+    }
+
+    .score-number {
+        color: #ffffff;
+        font-size: 62px;
+        line-height: 1;
+        font-weight: 900;
+        text-align: center;
+        letter-spacing: -2.2px;
+        margin: 13px 0 8px;
+        text-shadow: 0 0 28px rgba(34, 211, 238, 0.12);
+    }
+
+    .score-unit {
+        margin-left: 6px;
+        color: #7897ae;
+        font-size: 18px;
+        font-weight: 720;
+        letter-spacing: 0;
+    }
+
+    .screening-status {
+        text-align: center;
+        font-size: 15px;
+        font-weight: 790;
+        margin: 10px 0 5px;
+    }
+
+    .score-status-normal { color: #6ee7b7; }
+    .score-status-mild { color: #fde047; }
+    .score-status-warning { color: #fdba74; }
+    .score-status-danger { color: #fda4af; }
+
+    .score-caption {
+        color: var(--muted);
+        text-align: center;
+        font-size: 11px;
+        line-height: 1.65;
+        margin-top: 8px;
+    }
+
+    .model-strip {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
-        margin: 8px 0 20px;
+        gap: 9px;
+        margin: 12px 0 18px;
     }
 
-    .mini-visual {
-        min-height: 100px;
-        border-radius: 14px;
-        padding: 14px;
-        background: linear-gradient(145deg, rgba(34,77,112,0.92), rgba(20,58,91,0.94));
-        border: 1px solid rgba(103,232,249,0.18);
-        text-align: center;
+    .model-cell {
+        padding: 11px 12px;
+        border-radius: 11px;
+        border: 1px solid rgba(125, 211, 252, 0.11);
+        background: rgba(15, 48, 74, 0.56);
     }
 
-    .mini-visual .icon {
-        font-size: 31px;
-        margin-bottom: 6px;
+    .model-weight {
+        color: #7dd3fc;
+        font-size: 18px;
+        font-weight: 850;
+        line-height: 1;
     }
 
-    .mini-visual .label {
-        color: #dbeafe;
-        font-weight: 750;
-        font-size: 13px;
+    .model-label {
+        color: var(--muted-2);
+        font-size: 9px;
+        font-weight: 760;
+        margin-top: 5px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
     }
 
-    .mini-visual .caption {
-        color: #94a3b8;
-        font-size: 11px;
-        margin-top: 3px;
-    }
-
-    /* Brighter upload and tabs */
-    [data-testid="stFileUploader"] section {
-        background: rgba(34, 76, 112, 0.56);
+    /* --------------------------------------------------
+       Joint status cards
+       -------------------------------------------------- */
+    .status-good,
+    .status-mild,
+    .status-watch,
+    .status-alert {
+        padding: 13px 14px;
         border-radius: 12px;
+        margin-bottom: 9px;
+        line-height: 1.55;
+        border: 1px solid;
+        font-size: 12px;
+    }
+
+    .status-good {
+        color: #d1fae5;
+        background: rgba(16, 185, 129, 0.08);
+        border-color: rgba(52, 211, 153, 0.23);
+    }
+
+    .status-mild {
+        color: #fef9c3;
+        background: rgba(250, 204, 21, 0.07);
+        border-color: rgba(250, 204, 21, 0.22);
+    }
+
+    .status-watch {
+        color: #ffedd5;
+        background: rgba(251, 146, 60, 0.08);
+        border-color: rgba(251, 146, 60, 0.24);
+    }
+
+    .status-alert {
+        color: #ffe4e6;
+        background: rgba(251, 113, 133, 0.08);
+        border-color: rgba(251, 113, 133, 0.23);
+    }
+
+    /* --------------------------------------------------
+       Streamlit widgets
+       -------------------------------------------------- */
+    [data-testid="stMetric"] {
+        min-height: 95px;
+        padding: 14px 15px;
+        border-radius: 14px;
+        border: 1px solid rgba(125, 211, 252, 0.12);
+        background:
+            linear-gradient(
+                145deg,
+                rgba(20, 58, 89, 0.84),
+                rgba(9, 30, 49, 0.90)
+            );
+        box-shadow: 0 12px 28px rgba(0,0,0,0.16);
+    }
+
+    [data-testid="stMetricLabel"] {
+        color: #8facbf;
+        font-weight: 650;
+    }
+
+    [data-testid="stMetricValue"] {
+        color: #f4faff;
+        font-weight: 820;
+    }
+
+    [data-testid="stFileUploader"] {
+        padding: 12px;
+        border-radius: 16px;
+        border: 1px dashed rgba(34, 211, 238, 0.40);
+        background: rgba(18, 55, 84, 0.62);
+    }
+
+    [data-testid="stFileUploader"] section {
+        border-radius: 12px;
+        background: rgba(13, 42, 66, 0.70);
+    }
+
+    [data-testid="stAlert"] {
+        border-radius: 13px;
+        border: 1px solid rgba(148, 197, 224, 0.13);
+    }
+
+    [data-testid="stDataFrame"] {
+        overflow: hidden;
+        border-radius: 14px;
+        border: 1px solid rgba(125, 211, 252, 0.11);
     }
 
     div[data-baseweb="tab-list"] {
-        gap: 8px;
-        background: rgba(25, 65, 99, 0.55);
-        padding: 6px;
+        gap: 7px;
+        padding: 5px;
         border-radius: 12px;
+        background: rgba(13, 43, 68, 0.70);
+        border: 1px solid rgba(125, 211, 252, 0.08);
     }
 
-    /* ---------- Responsive ---------- */
-    @media (max-width: 900px) {
-        .nav-items { display: none; }
-        .brand { font-size: 19px; }
-        .top-nav { padding: 13px 16px; }
-        .score-number { font-size: 44px; }
-        .hero-panel { grid-template-columns: 1fr; padding: 24px; }
-        .hero-art { min-height: 140px; }
-        .mini-visual-row { grid-template-columns: 1fr; }
+    button[data-baseweb="tab"] {
+        color: #8eaabe;
+        border-radius: 9px;
+    }
+
+    button[data-baseweb="tab"][aria-selected="true"] {
+        color: #f8fbff;
+        background: rgba(34, 211, 238, 0.08);
+    }
+
+    [data-testid="stSidebar"] {
+        background:
+            linear-gradient(
+                180deg,
+                #0c263e,
+                #081a2b
+            );
+        border-right: 1px solid rgba(125, 211, 252, 0.10);
+    }
+
+    .stButton button,
+    .stDownloadButton button {
+        min-height: 45px;
+        border-radius: 11px;
+        border: 1px solid rgba(34, 211, 238, 0.40);
+        color: #f8fbff;
+        font-weight: 760;
+        background:
+            linear-gradient(
+                90deg,
+                rgba(2, 132, 199, 0.92),
+                rgba(8, 145, 178, 0.92)
+            );
+        box-shadow: 0 9px 24px rgba(2, 132, 199, 0.13);
+    }
+
+    .stButton button:hover,
+    .stDownloadButton button:hover {
+        color: #ffffff;
+        border-color: #67e8f9;
+        box-shadow: 0 10px 28px rgba(34, 211, 238, 0.18);
+    }
+
+    hr {
+        border-color: rgba(148, 197, 224, 0.10) !important;
+    }
+
+    .footer-note {
+        margin-top: 22px;
+        padding: 18px 3px 8px;
+        color: #7894ac;
+        font-size: 0.78rem;
+        line-height: 1.7;
+        border-top: 1px solid rgba(148, 197, 224, 0.10);
+    }
+
+    @media (max-width: 980px) {
+        .hero-panel {
+            grid-template-columns: 1fr;
+            padding: 24px;
+        }
+
+        .telemetry-panel {
+            display: grid;
+            grid-template-columns: 1fr;
+        }
+
+        .model-strip {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 700px) {
+        .block-container {
+            padding-top: 0.7rem;
+        }
+
+        .top-nav {
+            padding: 12px 14px;
+        }
+
+        .system-badge {
+            display: none;
+        }
+
+        .brand {
+            font-size: 18px;
+        }
+
+        .hero-title {
+            font-size: 30px;
+        }
+
+        .score-number {
+            font-size: 50px;
+        }
     }
     </style>
     """,
@@ -438,19 +723,18 @@ st.markdown(
 st.markdown(
     """
     <div class="top-nav">
-        <div class="brand">
-            <span class="brand-icon">▣</span>
-            Medical Gait AI
+        <div class="brand-wrap">
+            <div class="brand-mark">AI</div>
+            <div>
+                <div class="brand">Medical Gait AI</div>
+                <div class="brand-sub">Markerless Gait Screening Platform</div>
+            </div>
         </div>
 
-        <div class="nav-items">
-            <span class="nav-active">Dashboard</span>
-            <span>Patient Data</span>
-            <span>Reports</span>
-            <span>Settings</span>
+        <div class="system-badge">
+            <span class="system-dot"></span>
+            Research Prototype
         </div>
-
-        <div class="nav-user">👤</div>
     </div>
     """,
     unsafe_allow_html=True
@@ -459,47 +743,51 @@ st.markdown(
 st.markdown(
     """
     <div class="hero-panel">
-        <div>
-            <div class="hero-kicker">AI-ASSISTED MOVEMENT ANALYSIS</div>
-            <div class="hero-title">Video Gait Analysis Dashboard</div>
+        <div class="hero-main">
+            <div class="hero-kicker">AI-Assisted Movement Analytics</div>
+            <div class="hero-title">
+                Video Gait Analysis<br>
+                for Clinical Screening
+            </div>
             <div class="hero-copy">
-                วิเคราะห์การเคลื่อนไหวจากวิดีโอด้วย MediaPipe Pose
-                พร้อมสรุปมุมข้อต่อ ความสมมาตร ROM และ Gait Screening
-                ในรูปแบบแดชบอร์ดที่อ่านผลได้ง่าย
+                วิเคราะห์การเดินจากวิดีโอด้านข้างด้วย 2D pose estimation
+                พร้อมสร้าง normalized gait cycle 0–100%,
+                คำนวณ Hip / Knee / Ankle kinematics,
+                Curve MAE, ROM Symmetry และ Phase-based metrics
+                เพื่อช่วยคัดกรองและติดตามความเปลี่ยนแปลงอย่างเป็นระบบ
             </div>
+
             <div class="hero-tags">
-                <span class="hero-tag">Pose Tracking</span>
-                <span class="hero-tag">Hip / Knee / Ankle</span>
-                <span class="hero-tag">Symmetry Index</span>
-                <span class="hero-tag">ROM Analysis</span>
+                <span class="hero-tag">2D Pose Tracking</span>
+                <span class="hero-tag">Gait Cycle 0–100%</span>
+                <span class="hero-tag">Curve MAE</span>
+                <span class="hero-tag">ROM Symmetry</span>
+                <span class="hero-tag">Phase Metrics</span>
             </div>
         </div>
 
-        <div class="hero-art" aria-label="ภาพประกอบระบบติดตามท่าเดิน">
-            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjgwIiBoZWlnaHQ9IjE5MCIgdmlld0JveD0iMCAwIDI4MCAxOTAiCiAgICAgICAgICAgICAgICAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiByb2xlPSJpbWciPgogICAgICAgICAgICAgICAgPGRlZnM+CiAgICAgICAgICAgICAgICAgICAgPGxpbmVhckdyYWRpZW50IGlkPSJsaW1iIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+CiAgICAgICAgICAgICAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNlMGYyZmUiLz4KICAgICAgICAgICAgICAgICAgICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjOTNjNWZkIi8+CiAgICAgICAgICAgICAgICAgICAgPC9saW5lYXJHcmFkaWVudD4KICAgICAgICAgICAgICAgICAgICA8ZmlsdGVyIGlkPSJnbG93Ij4KICAgICAgICAgICAgICAgICAgICAgICAgPGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iMy4yIiByZXN1bHQ9ImJsdXIiLz4KICAgICAgICAgICAgICAgICAgICAgICAgPGZlTWVyZ2U+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8ZmVNZXJnZU5vZGUgaW49ImJsdXIiLz4KICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxmZU1lcmdlTm9kZSBpbj0iU291cmNlR3JhcGhpYyIvPgogICAgICAgICAgICAgICAgICAgICAgICA8L2ZlTWVyZ2U+CiAgICAgICAgICAgICAgICAgICAgPC9maWx0ZXI+CiAgICAgICAgICAgICAgICA8L2RlZnM+CgogICAgICAgICAgICAgICAgPGNpcmNsZSBjeD0iMTM0IiBjeT0iMjgiIHI9IjE2IiBmaWxsPSIjZWFmOGZmIi8+CiAgICAgICAgICAgICAgICA8ZyBzdHJva2U9InVybCgjbGltYikiIHN0cm9rZS13aWR0aD0iNyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj4KICAgICAgICAgICAgICAgICAgICA8bGluZSB4MT0iMTM0IiB5MT0iNDciIHgyPSIxMzEiIHkyPSI4OCIvPgogICAgICAgICAgICAgICAgICAgIDxsaW5lIHgxPSIxMzEiIHkxPSI2MiIgeDI9Ijk2IiB5Mj0iNzYiLz4KICAgICAgICAgICAgICAgICAgICA8bGluZSB4MT0iOTYiIHkxPSI3NiIgeDI9Ijc2IiB5Mj0iMTA4Ii8+CiAgICAgICAgICAgICAgICAgICAgPGxpbmUgeDE9IjEzMSIgeTE9IjYyIiB4Mj0iMTY2IiB5Mj0iNzgiLz4KICAgICAgICAgICAgICAgICAgICA8bGluZSB4MT0iMTY2IiB5MT0iNzgiIHgyPSIyMDAiIHkyPSI5MiIvPgogICAgICAgICAgICAgICAgICAgIDxsaW5lIHgxPSIxMzEiIHkxPSI4OCIgeDI9IjEwNSIgeTI9IjEyNSIvPgogICAgICAgICAgICAgICAgICAgIDxsaW5lIHgxPSIxMDUiIHkxPSIxMjUiIHgyPSI3MiIgeTI9IjE2MCIvPgogICAgICAgICAgICAgICAgICAgIDxsaW5lIHgxPSIxMzEiIHkxPSI4OCIgeDI9IjE2MCIgeTI9IjEyNSIvPgogICAgICAgICAgICAgICAgICAgIDxsaW5lIHgxPSIxNjAiIHkxPSIxMjUiIHgyPSIxODAiIHkyPSIxNjQiLz4KICAgICAgICAgICAgICAgIDwvZz4KCiAgICAgICAgICAgICAgICA8ZyBmaWx0ZXI9InVybCgjZ2xvdykiPgogICAgICAgICAgICAgICAgICAgIDxjaXJjbGUgY3g9IjEzMSIgY3k9IjYyIiByPSI4IiBmaWxsPSIjMjJkM2VlIi8+CiAgICAgICAgICAgICAgICAgICAgPGNpcmNsZSBjeD0iOTYiIGN5PSI3NiIgcj0iNyIgZmlsbD0iIzY3ZThmOSIvPgogICAgICAgICAgICAgICAgICAgIDxjaXJjbGUgY3g9Ijc2IiBjeT0iMTA4IiByPSI3IiBmaWxsPSIjMjJkM2VlIi8+CiAgICAgICAgICAgICAgICAgICAgPGNpcmNsZSBjeD0iMTY2IiBjeT0iNzgiIHI9IjciIGZpbGw9IiNjMDg0ZmMiLz4KICAgICAgICAgICAgICAgICAgICA8Y2lyY2xlIGN4PSIyMDAiIGN5PSI5MiIgcj0iNyIgZmlsbD0iI2E4NTVmNyIvPgogICAgICAgICAgICAgICAgICAgIDxjaXJjbGUgY3g9IjEzMSIgY3k9Ijg4IiByPSI5IiBmaWxsPSIjNjdlOGY5Ii8+CiAgICAgICAgICAgICAgICAgICAgPGNpcmNsZSBjeD0iMTA1IiBjeT0iMTI1IiByPSI4IiBmaWxsPSIjMjJkM2VlIi8+CiAgICAgICAgICAgICAgICAgICAgPGNpcmNsZSBjeD0iNzIiIGN5PSIxNjAiIHI9IjgiIGZpbGw9IiM2N2U4ZjkiLz4KICAgICAgICAgICAgICAgICAgICA8Y2lyY2xlIGN4PSIxNjAiIGN5PSIxMjUiIHI9IjgiIGZpbGw9IiNjMDg0ZmMiLz4KICAgICAgICAgICAgICAgICAgICA8Y2lyY2xlIGN4PSIxODAiIGN5PSIxNjQiIHI9IjgiIGZpbGw9IiNhODU1ZjciLz4KICAgICAgICAgICAgICAgIDwvZz4KCiAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMTggMTQ1IEM1NSAxMjUsIDYzIDE1OCwgOTggMTQyIFMxNTAgMTE4LCAxOTQgMTM2IFMyMzggMTQ4LCAyNjYgMTE4IgogICAgICAgICAgICAgICAgICAgICAgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMjJkM2VlIiBzdHJva2Utd2lkdGg9IjIuNSIgb3BhY2l0eT0iMC43NSIvPgogICAgICAgICAgICAgICAgPHBhdGggZD0iTTE4IDE1NSBIMjY1IiBzdHJva2U9IiM3ZGQzZmMiIHN0cm9rZS13aWR0aD0iMSIgb3BhY2l0eT0iMC4xOCIvPgogICAgICAgICAgICAgICAgPGNpcmNsZSBjeD0iMjMyIiBjeT0iNDIiIHI9IjIyIiBmaWxsPSJub25lIiBzdHJva2U9IiM2N2U4ZjkiIHN0cm9rZS13aWR0aD0iMiIgb3BhY2l0eT0iMC41NSIvPgogICAgICAgICAgICAgICAgPGNpcmNsZSBjeD0iMjMyIiBjeT0iNDIiIHI9IjkiIGZpbGw9IiMyMmQzZWUiIG9wYWNpdHk9IjAuNjUiLz4KICAgICAgICAgICAgPC9zdmc+" alt="ภาพประกอบระบบติดตามท่าเดิน" style="width:280px;max-width:100%;height:auto;display:block;margin:auto;" />
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+        <div class="telemetry-panel">
+            <div class="telemetry-title">Analysis Pipeline</div>
 
-st.markdown(
-    """
-    <div class="mini-visual-row">
-        <div class="mini-visual">
-            <div class="icon">🧍</div>
-            <div class="label">Pose Detection</div>
-            <div class="caption">ตรวจจับโครงร่างจากวิดีโอ</div>
-        </div>
-        <div class="mini-visual">
-            <div class="icon">📐</div>
-            <div class="label">Joint Angles</div>
-            <div class="caption">Hip · Knee · Ankle</div>
-        </div>
-        <div class="mini-visual">
-            <div class="icon">⚖️</div>
-            <div class="label">Symmetry</div>
-            <div class="caption">เปรียบเทียบซ้าย–ขวา</div>
+            <div class="telemetry-row">
+                <span class="telemetry-label">Pose Engine</span>
+                <span class="telemetry-value">MediaPipe Pose</span>
+            </div>
+
+            <div class="telemetry-row">
+                <span class="telemetry-label">Plane</span>
+                <span class="telemetry-value">Sagittal / 2D</span>
+            </div>
+
+            <div class="telemetry-row">
+                <span class="telemetry-label">Cycle Model</span>
+                <span class="telemetry-value">Heel-strike Normalized</span>
+            </div>
+
+            <div class="telemetry-row">
+                <span class="telemetry-label">Score Model</span>
+                <span class="telemetry-value">40 / 35 / 25</span>
+            </div>
         </div>
     </div>
     """,
@@ -711,10 +999,18 @@ def mae_to_score(
     tolerance_deg
 ):
     """
-    แปลง MAE (องศา) เป็นคะแนน 0-100
+    แปลง Mean Absolute Error (°) เป็นคะแนน 0-100
+    ด้วย smooth inverse-square decay:
+
+        score = 100 / (1 + (error / tolerance)^2)
+
+    คุณสมบัติ:
+    - error = 0        -> 100 คะแนน
+    - error = tolerance -> 50 คะแนน
+    - ไม่มีการตัดเป็น 0 ทันทีเมื่อ error เกิน tolerance
 
     tolerance_deg เป็น system scaling constant
-    ไม่ใช่เกณฑ์วินิจฉัยทางคลินิก
+    ไม่ใช่ clinical diagnostic cut-off
     """
 
     if not np.isfinite(mae_deg):
@@ -723,12 +1019,22 @@ def mae_to_score(
     if tolerance_deg <= 0:
         return 0.0
 
+    ratio = (
+        mae_deg
+        / tolerance_deg
+    )
+
+    score = (
+        100.0
+        / (
+            1.0
+            + ratio ** 2
+        )
+    )
+
     return float(
         np.clip(
-            100.0 * (
-                1.0
-                - mae_deg / tolerance_deg
-            ),
+            score,
             0.0,
             100.0
         )
@@ -741,20 +1047,37 @@ def rom_si_to_score(
 ):
     """
     แปลง ROM Symmetry Index (%) เป็นคะแนน 0-100
+    ด้วย smooth inverse-square decay:
 
-    0%  = ROM ซ้าย-ขวาเท่ากัน
-    tolerance_percent = system scaling constant
+        score = 100 / (1 + (SI / tolerance)^2)
+
+    0% SI หมายถึง ROM ซ้าย-ขวาเท่ากัน
+    tolerance_percent เป็น system scaling constant
+    ไม่ใช่ clinical diagnostic cut-off
     """
 
     if not np.isfinite(rom_si):
         return np.nan
 
+    if tolerance_percent <= 0:
+        return 0.0
+
+    ratio = (
+        rom_si
+        / tolerance_percent
+    )
+
+    score = (
+        100.0
+        / (
+            1.0
+            + ratio ** 2
+        )
+    )
+
     return float(
         np.clip(
-            100.0 * (
-                1.0
-                - rom_si / tolerance_percent
-            ),
+            score,
             0.0,
             100.0
         )
@@ -1658,33 +1981,46 @@ def calculate_gait_screening(
     # 3) Status จาก final score
     # =====================================================
     # เป็น system threshold สำหรับ prototype เท่านั้น
+    # ไม่ใช่เกณฑ์วินิจฉัยทางคลินิก
 
     if score >= 80:
 
         level = "normal"
 
         status = (
-            "🟢 ความสมมาตรโดยรวมอยู่ในระดับดี"
+            "ความสมมาตรโดยรวมอยู่ในระดับดี"
         )
 
         description = (
-            "คะแนนระบบอยู่ในระดับสูงจากการเปรียบเทียบ "
-            "joint-angle curves, ROM และ phase metrics "
-            "ที่ระบบตรวจได้"
+            "ตัวชี้วัดที่ระบบตรวจได้มีความใกล้เคียงกันโดยรวม "
+            "ควรอ่านร่วมกับ joint-angle curves, ROM และ phase metrics"
         )
 
-    elif score >= 60:
+    elif score >= 65:
+
+        level = "mild"
+
+        status = (
+            "พบความแตกต่างเล็กน้อย"
+        )
+
+        description = (
+            "ระบบพบความแตกต่างซ้าย–ขวาเล็กน้อยในบางองค์ประกอบ "
+            "ควรพิจารณาร่วมกับกราฟ gait cycle และ ROM"
+        )
+
+    elif score >= 45:
 
         level = "warning"
 
         status = (
-            "🟡 พบความแตกต่างบางส่วน"
+            "ควรประเมินเพิ่มเติม"
         )
 
         description = (
-            "ระบบพบความแตกต่างซ้าย–ขวาบางส่วน "
-            "ควรพิจารณากราฟ gait cycle, ROM "
-            "และ phase metrics ร่วมกัน"
+            "ระบบพบความแตกต่างของการเคลื่อนไหวบางองค์ประกอบ "
+            "ควรตรวจ joint-angle curve, ROM, gait phase "
+            "และคุณภาพวิดีโอเพิ่มเติม"
         )
 
     else:
@@ -1692,7 +2028,7 @@ def calculate_gait_screening(
         level = "danger"
 
         status = (
-            "🔴 พบความแตกต่างซ้าย–ขวาค่อนข้างมาก"
+            "พบความแตกต่างซ้าย–ขวาค่อนข้างมาก"
         )
 
         description = (
@@ -1834,7 +2170,7 @@ with st.sidebar:
 # =========================================================
 
 st.markdown(
-    '<div class="section-title">📹 อัปโหลดวิดีโอด้านข้าง</div>',
+    '<div class="section-title">Video Input · Sagittal View</div>',
     unsafe_allow_html=True
 )
 
@@ -2353,7 +2689,7 @@ if uploaded_file is not None:
         st.divider()
 
         st.markdown(
-            '<div class="section-title">🩺 Medical Gait Dashboard</div>',
+            '<div class="section-title">Clinical Gait Dashboard</div>',
             unsafe_allow_html=True
         )
 
@@ -2431,7 +2767,7 @@ if uploaded_file is not None:
                 )
 
         # -------------------------------------------------
-        # CENTER: Symmetry Score + Stability chart
+        # CENTER: Gait Screening Score + component chart
         # -------------------------------------------------
         with center_col:
 
@@ -2451,20 +2787,43 @@ if uploaded_file is not None:
                 else "N/A"
             )
 
+            status_css_class = (
+                f"score-status-{screening['level']}"
+            )
+
             st.markdown(
                 f"""
                 <div class="med-card">
                     <div class="card-title">Gait Screening Score</div>
+
                     <div class="score-number">
-                        {screening['score']:.0f}%
+                        {screening['score']:.0f}
+                        <span class="score-unit">/100</span>
                     </div>
-                    <div class="screening-status">
+
+                    <div class="screening-status {status_css_class}">
                         {screening['status']}
                     </div>
+
                     <div class="score-caption">
-                        Curve MAE {curve_mae_caption} ·
-                        ROM SI {screening['overall_rom_si']:.2f}% ·
-                        Phase diff {phase_mae_caption}
+                        Curve MAE {curve_mae_caption} &nbsp;·&nbsp;
+                        ROM SI {screening['overall_rom_si']:.2f}% &nbsp;·&nbsp;
+                        Phase Difference {phase_mae_caption}
+                    </div>
+                </div>
+
+                <div class="model-strip">
+                    <div class="model-cell">
+                        <div class="model-weight">40%</div>
+                        <div class="model-label">Joint Curve</div>
+                    </div>
+                    <div class="model-cell">
+                        <div class="model-weight">35%</div>
+                        <div class="model-label">ROM Symmetry</div>
+                    </div>
+                    <div class="model-cell">
+                        <div class="model-weight">25%</div>
+                        <div class="model-label">Phase / Peak</div>
                     </div>
                 </div>
                 """,
@@ -2476,8 +2835,11 @@ if uploaded_file is not None:
                     mode="gauge+number",
                     value=screening["score"],
                     number={
-                        "suffix": "%",
                         "font": {"size": 48}
+                    },
+                    title={
+                        "text": "Prototype score / 100",
+                        "font": {"size": 14}
                     },
                     gauge={
                         "axis": {
@@ -2492,16 +2854,20 @@ if uploaded_file is not None:
                         "borderwidth": 0,
                         "steps": [
                             {
-                                "range": [0, 70],
-                                "color": "rgba(239,68,68,0.40)"
+                                "range": [0, 45],
+                                "color": "rgba(251,113,133,0.34)"
                             },
                             {
-                                "range": [70, 85],
-                                "color": "rgba(245,158,11,0.42)"
+                                "range": [45, 65],
+                                "color": "rgba(251,146,60,0.34)"
                             },
                             {
-                                "range": [85, 100],
-                                "color": "rgba(34,197,94,0.42)"
+                                "range": [65, 80],
+                                "color": "rgba(250,204,21,0.30)"
+                            },
+                            {
+                                "range": [80, 100],
+                                "color": "rgba(52,211,153,0.32)"
                             }
                         ]
                     }
@@ -2667,24 +3033,26 @@ if uploaded_file is not None:
                 if joint_score >= 80:
 
                     css_class = "status-good"
-                    symbol = "✓"
                     message = "ความสมมาตรอยู่ในระดับดี"
 
-                elif joint_score >= 60:
+                elif joint_score >= 65:
+
+                    css_class = "status-mild"
+                    message = "พบความแตกต่างเล็กน้อย"
+
+                elif joint_score >= 45:
 
                     css_class = "status-watch"
-                    symbol = "△"
-                    message = "พบความแตกต่างบางส่วน"
+                    message = "ควรประเมินเพิ่มเติม"
 
                 else:
 
                     css_class = "status-alert"
-                    symbol = "⚠"
                     message = "พบความแตกต่างค่อนข้างมาก"
 
                 st.markdown(
                     f'<div class="{css_class}">'
-                    f'{symbol} <b>{label}</b><br>'
+                    f'<b>{label}</b><br>'
                     f'{detail}<br>'
                     f'{message}</div>',
                     unsafe_allow_html=True
@@ -2744,7 +3112,7 @@ if uploaded_file is not None:
             st.markdown(
                 """
                 <div class="status-watch">
-                    ⚠ <b>ข้อควรระวัง</b><br>
+                    <b>ข้อควรระวัง</b><br>
                     ผลลัพธ์นี้เป็นการคัดกรองจากวิดีโอ 2D และอาจได้รับ
                     ผลกระทบจากมุมกล้อง แสง เสื้อผ้า การบังร่างกาย
                     และคุณภาพวิดีโอ
@@ -2757,8 +3125,64 @@ if uploaded_file is not None:
         # Summary metrics
         # -------------------------------------------------
         st.markdown(
-            '<div class="section-title">📊 ตัวชี้วัดหลัก</div>',
+            '<div class="section-title">Scoring & Quality Metrics</div>',
             unsafe_allow_html=True
+        )
+
+        score_c1, score_c2, score_c3 = st.columns(3)
+
+        with score_c1:
+
+            if np.isfinite(
+                screening["curve_component_score"]
+            ):
+
+                st.metric(
+                    "Curve Similarity Score",
+                    f"{screening['curve_component_score']:.0f} / 100",
+                    help="น้ำหนัก 40% ของคะแนนรวม"
+                )
+
+            else:
+
+                st.metric(
+                    "Curve Similarity Score",
+                    "N/A",
+                    help="ต้องมี normalized gait cycle"
+                )
+
+        with score_c2:
+
+            st.metric(
+                "ROM Symmetry Score",
+                f"{screening['rom_component_score']:.0f} / 100",
+                help="น้ำหนัก 35% ของคะแนนรวม"
+            )
+
+        with score_c3:
+
+            if np.isfinite(
+                screening["phase_component_score"]
+            ):
+
+                st.metric(
+                    "Phase / Peak Score",
+                    f"{screening['phase_component_score']:.0f} / 100",
+                    help="น้ำหนัก 25% ของคะแนนรวม"
+                )
+
+            else:
+
+                st.metric(
+                    "Phase / Peak Score",
+                    "N/A",
+                    help="ต้องมี normalized gait cycle"
+                )
+
+        st.caption(
+            "สูตรคะแนนใช้ smooth decay เพื่อหลีกเลี่ยงการตัดคะแนนเป็นศูนย์ทันที "
+            "เมื่อค่าความต่างเกิน tolerance; tolerance เป็นค่าปรับสเกลของ prototype "
+            "ไม่ใช่ clinical diagnostic cut-off"
         )
 
         m1, m2, m3, m4 = st.columns(4)
@@ -2803,7 +3227,7 @@ if uploaded_file is not None:
         st.divider()
 
         st.markdown(
-            '<div class="section-title">🔄 Gait Cycle Analysis · 0–100%</div>',
+            '<div class="section-title">Normalized Gait Cycle · 0–100%</div>',
             unsafe_allow_html=True
         )
 
@@ -3115,7 +3539,7 @@ if uploaded_file is not None:
 
             st.markdown(
                 '<div class="section-title">'
-                '📚 Phase-based reference comparison'
+                'Phase-based Reference Comparison'
                 '</div>',
                 unsafe_allow_html=True
             )
@@ -3193,7 +3617,7 @@ if uploaded_file is not None:
         st.divider()
 
         st.markdown(
-            '<div class="section-title">📈 Joint Angle Over Time</div>',
+            '<div class="section-title">Joint Angle Time Series</div>',
             unsafe_allow_html=True
         )
 
@@ -3317,7 +3741,7 @@ if uploaded_file is not None:
         st.divider()
 
         st.markdown(
-            '<div class="section-title">🦵 สรุปการเคลื่อนไหวของเข่า</div>',
+            '<div class="section-title">Knee Kinematics Summary</div>',
             unsafe_allow_html=True
         )
 
@@ -3409,7 +3833,7 @@ if uploaded_file is not None:
         st.divider()
 
         st.markdown(
-            '<div class="section-title">🔎 ความแตกต่างซ้าย–ขวารายข้อต่อ</div>',
+            '<div class="section-title">Left–Right Joint Difference</div>',
             unsafe_allow_html=True
         )
 
@@ -3464,7 +3888,7 @@ if uploaded_file is not None:
         # =================================================
 
         st.markdown(
-            '<div class="section-title">🧩 รายละเอียดแต่ละข้อต่อ</div>',
+            '<div class="section-title">Joint-Level Detail</div>',
             unsafe_allow_html=True
         )
 
@@ -3533,7 +3957,7 @@ if uploaded_file is not None:
         st.divider()
 
         st.markdown(
-            '<div class="section-title">📋 ตารางสรุปมุมข้อต่อ</div>',
+            '<div class="section-title">Joint Angle Summary Table</div>',
             unsafe_allow_html=True
         )
 
@@ -3632,32 +4056,43 @@ if uploaded_file is not None:
         st.divider()
 
         st.markdown(
-            '<div class="section-title">📖 เกณฑ์การแปลผล</div>',
+            '<div class="section-title">Interpretation Framework</div>',
             unsafe_allow_html=True
         )
 
 
         interpretation_df = pd.DataFrame({
 
-            "ระดับ": [
-                "🟢 ปกติ",
-                "🟡 ควรประเมินเพิ่มเติม",
-                "🔴 พบความแตกต่างมาก"
+            "ระดับระบบ": [
+                "ระดับดี",
+                "แตกต่างเล็กน้อย",
+                "ควรประเมินเพิ่มเติม",
+                "แตกต่างค่อนข้างมาก"
             ],
 
-            "Overall SI": [
-                "< 5%",
-                "5% – < 10%",
-                "≥ 10%"
+            "Gait Screening Score": [
+                "80–100",
+                "65–79",
+                "45–64",
+                "0–44"
             ],
 
             "ความหมาย": [
-
-                "ความแตกต่างซ้าย–ขวาอยู่ในระดับต่ำ",
-
-                "มีความแตกต่างระดับปานกลาง",
-
-                "มีความแตกต่างค่อนข้างมาก"
+                (
+                    "ตัวชี้วัดซ้าย–ขวามีความใกล้เคียงกันโดยรวม "
+                    "ตามโมเดลคะแนนของระบบ"
+                ),
+                (
+                    "พบความแตกต่างเล็กน้อยในบางองค์ประกอบ"
+                ),
+                (
+                    "พบความแตกต่างของการเคลื่อนไหวบางองค์ประกอบ "
+                    "ควรตรวจกราฟและคุณภาพข้อมูลเพิ่มเติม"
+                ),
+                (
+                    "พบความแตกต่างหลายองค์ประกอบ "
+                    "ควรตรวจคุณภาพวิดีโอและประเมินเพิ่มเติม"
+                )
             ]
         })
 
@@ -3677,9 +4112,18 @@ if uploaded_file is not None:
             """
             ⚠️ **คำเตือนสำคัญ**
 
-            Gait Screening Score และเกณฑ์สีในระบบนี้
-            ใช้สำหรับการคัดกรองเบื้องต้นจากข้อมูลวิดีโอและ
-            Symmetry Index เท่านั้น
+            Gait Screening Score และเกณฑ์สีในระบบนี้เป็น
+            **prototype screening model** ที่รวม 3 องค์ประกอบ:
+            Joint Curve Similarity 40%, ROM Symmetry 35% และ
+            Phase / Peak Similarity 25%
+
+            การแปลงค่าความต่างเป็นคะแนนใช้ smooth decay
+            `100 / (1 + (error / tolerance)^2)` เพื่อลดปัญหา
+            คะแนนตกเป็นศูนย์ทันทีเมื่อค่าความต่างเกิน tolerance
+
+            ค่า tolerance และช่วงคะแนนสีเป็นค่าปรับสเกลของระบบ
+            ไม่ใช่ clinical diagnostic cut-off และยังไม่ได้ผ่าน
+            clinical validation
 
             ไม่สามารถใช้ยืนยันหรือวินิจฉัยโรค
             หรือความผิดปกติทางการแพทย์ได้
@@ -3698,7 +4142,7 @@ if uploaded_file is not None:
         st.divider()
 
         st.markdown(
-            '<div class="section-title">📥 ส่งออกข้อมูล</div>',
+            '<div class="section-title">Data Export</div>',
             unsafe_allow_html=True
         )
 
@@ -3725,7 +4169,7 @@ if uploaded_file is not None:
         st.divider()
 
         st.markdown(
-            '<div class="section-title">🧾 ข้อมูลประกอบการประเมิน</div>',
+            '<div class="section-title">Assessment Context</div>',
             unsafe_allow_html=True
         )
 
