@@ -41,7 +41,7 @@ st.markdown(
     /* ---------- App background ---------- */
     .stApp {
         background:
-            radial-gradient(circle at top, #10233a 0%, #071421 42%, #040b13 100%);
+            radial-gradient(circle at top, #1a4164 0%, #0e2b46 42%, #081a2c 100%);
         color: #f8fafc;
     }
 
@@ -66,7 +66,7 @@ st.markdown(
         gap: 24px;
         padding: 16px 24px;
         margin-bottom: 24px;
-        background: rgba(5, 17, 30, 0.88);
+        background: rgba(11, 35, 57, 0.90);
         border: 1px solid rgba(125, 211, 252, 0.12);
         border-radius: 14px;
         box-shadow: 0 10px 35px rgba(0,0,0,0.22);
@@ -130,8 +130,8 @@ st.markdown(
     .med-card {
         background: linear-gradient(
             145deg,
-            rgba(20, 46, 72, 0.96),
-            rgba(7, 23, 39, 0.98)
+            rgba(31, 73, 108, 0.96),
+            rgba(15, 44, 70, 0.98)
         );
         border: 1px solid rgba(103, 232, 249, 0.16);
         border-radius: 14px;
@@ -225,7 +225,7 @@ st.markdown(
 
     /* ---------- Upload box ---------- */
     [data-testid="stFileUploader"] {
-        background: rgba(10, 31, 50, 0.88);
+        background: rgba(18, 54, 84, 0.92);
         border: 1px dashed rgba(34,211,238,0.48);
         border-radius: 14px;
         padding: 16px;
@@ -279,12 +279,151 @@ st.markdown(
         border-top: 1px solid rgba(148,163,184,0.12);
     }
 
+
+    /* ---------- Hero / illustrative visuals ---------- */
+    .hero-panel {
+        position: relative;
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: 1.45fr 1fr;
+        align-items: center;
+        gap: 24px;
+        min-height: 225px;
+        padding: 30px 34px;
+        margin-bottom: 22px;
+        border-radius: 20px;
+        background:
+            linear-gradient(120deg, rgba(28, 79, 118, 0.97), rgba(18, 58, 91, 0.95));
+        border: 1px solid rgba(103, 232, 249, 0.28);
+        box-shadow:
+            0 16px 42px rgba(0,0,0,0.22),
+            inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+
+    .hero-panel:before {
+        content: "";
+        position: absolute;
+        width: 360px;
+        height: 360px;
+        right: -120px;
+        top: -150px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(34,211,238,0.24), rgba(34,211,238,0));
+    }
+
+    .hero-kicker {
+        color: #67e8f9;
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 1.3px;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+    }
+
+    .hero-title {
+        color: #ffffff;
+        font-size: clamp(28px, 3vw, 42px);
+        font-weight: 850;
+        line-height: 1.1;
+        margin-bottom: 12px;
+    }
+
+    .hero-copy {
+        color: #cbd5e1;
+        font-size: 15px;
+        line-height: 1.7;
+        max-width: 720px;
+    }
+
+    .hero-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 16px;
+    }
+
+    .hero-tag {
+        padding: 7px 11px;
+        border-radius: 999px;
+        background: rgba(103,232,249,0.10);
+        border: 1px solid rgba(103,232,249,0.22);
+        color: #dffaff;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .hero-art {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 180px;
+        filter: drop-shadow(0 0 18px rgba(34,211,238,0.20));
+    }
+
+    .visual-card {
+        padding: 16px;
+        border-radius: 16px;
+        background: linear-gradient(145deg, rgba(37,82,119,0.82), rgba(17,51,80,0.90));
+        border: 1px solid rgba(125,211,252,0.24);
+        box-shadow: 0 10px 28px rgba(0,0,0,0.20);
+        margin-bottom: 14px;
+    }
+
+    .mini-visual-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin: 8px 0 20px;
+    }
+
+    .mini-visual {
+        min-height: 100px;
+        border-radius: 14px;
+        padding: 14px;
+        background: linear-gradient(145deg, rgba(34,77,112,0.92), rgba(20,58,91,0.94));
+        border: 1px solid rgba(103,232,249,0.18);
+        text-align: center;
+    }
+
+    .mini-visual .icon {
+        font-size: 31px;
+        margin-bottom: 6px;
+    }
+
+    .mini-visual .label {
+        color: #dbeafe;
+        font-weight: 750;
+        font-size: 13px;
+    }
+
+    .mini-visual .caption {
+        color: #94a3b8;
+        font-size: 11px;
+        margin-top: 3px;
+    }
+
+    /* Brighter upload and tabs */
+    [data-testid="stFileUploader"] section {
+        background: rgba(34, 76, 112, 0.56);
+        border-radius: 12px;
+    }
+
+    div[data-baseweb="tab-list"] {
+        gap: 8px;
+        background: rgba(25, 65, 99, 0.55);
+        padding: 6px;
+        border-radius: 12px;
+    }
+
     /* ---------- Responsive ---------- */
     @media (max-width: 900px) {
         .nav-items { display: none; }
         .brand { font-size: 19px; }
         .top-nav { padding: 13px 16px; }
         .score-number { font-size: 44px; }
+        .hero-panel { grid-template-columns: 1fr; padding: 24px; }
+        .hero-art { min-height: 140px; }
+        .mini-visual-row { grid-template-columns: 1fr; }
     }
     </style>
     """,
@@ -318,13 +457,99 @@ st.markdown(
 )
 
 st.markdown(
-    '<div class="section-title">Video Gait Analysis Dashboard</div>',
+    """
+    <div class="hero-panel">
+        <div>
+            <div class="hero-kicker">AI-ASSISTED MOVEMENT ANALYSIS</div>
+            <div class="hero-title">Video Gait Analysis Dashboard</div>
+            <div class="hero-copy">
+                วิเคราะห์การเคลื่อนไหวจากวิดีโอด้วย MediaPipe Pose
+                พร้อมสรุปมุมข้อต่อ ความสมมาตร ROM และ Gait Screening
+                ในรูปแบบแดชบอร์ดที่อ่านผลได้ง่าย
+            </div>
+            <div class="hero-tags">
+                <span class="hero-tag">Pose Tracking</span>
+                <span class="hero-tag">Hip / Knee / Ankle</span>
+                <span class="hero-tag">Symmetry Index</span>
+                <span class="hero-tag">ROM Analysis</span>
+            </div>
+        </div>
+
+        <div class="hero-art" aria-label="ภาพประกอบระบบติดตามท่าเดิน">
+            <svg width="280" height="190" viewBox="0 0 280 190"
+                 xmlns="http://www.w3.org/2000/svg" role="img">
+                <defs>
+                    <linearGradient id="limb" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#e0f2fe"/>
+                        <stop offset="100%" stop-color="#93c5fd"/>
+                    </linearGradient>
+                    <filter id="glow">
+                        <feGaussianBlur stdDeviation="3.2" result="blur"/>
+                        <feMerge>
+                            <feMergeNode in="blur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                </defs>
+
+                <circle cx="134" cy="28" r="16" fill="#eaf8ff"/>
+                <g stroke="url(#limb)" stroke-width="7" stroke-linecap="round">
+                    <line x1="134" y1="47" x2="131" y2="88"/>
+                    <line x1="131" y1="62" x2="96" y2="76"/>
+                    <line x1="96" y1="76" x2="76" y2="108"/>
+                    <line x1="131" y1="62" x2="166" y2="78"/>
+                    <line x1="166" y1="78" x2="200" y2="92"/>
+                    <line x1="131" y1="88" x2="105" y2="125"/>
+                    <line x1="105" y1="125" x2="72" y2="160"/>
+                    <line x1="131" y1="88" x2="160" y2="125"/>
+                    <line x1="160" y1="125" x2="180" y2="164"/>
+                </g>
+
+                <g filter="url(#glow)">
+                    <circle cx="131" cy="62" r="8" fill="#22d3ee"/>
+                    <circle cx="96" cy="76" r="7" fill="#67e8f9"/>
+                    <circle cx="76" cy="108" r="7" fill="#22d3ee"/>
+                    <circle cx="166" cy="78" r="7" fill="#c084fc"/>
+                    <circle cx="200" cy="92" r="7" fill="#a855f7"/>
+                    <circle cx="131" cy="88" r="9" fill="#67e8f9"/>
+                    <circle cx="105" cy="125" r="8" fill="#22d3ee"/>
+                    <circle cx="72" cy="160" r="8" fill="#67e8f9"/>
+                    <circle cx="160" cy="125" r="8" fill="#c084fc"/>
+                    <circle cx="180" cy="164" r="8" fill="#a855f7"/>
+                </g>
+
+                <path d="M18 145 C55 125, 63 158, 98 142 S150 118, 194 136 S238 148, 266 118"
+                      fill="none" stroke="#22d3ee" stroke-width="2.5" opacity="0.75"/>
+                <path d="M18 155 H265" stroke="#7dd3fc" stroke-width="1" opacity="0.18"/>
+                <circle cx="232" cy="42" r="22" fill="none" stroke="#67e8f9" stroke-width="2" opacity="0.55"/>
+                <circle cx="232" cy="42" r="9" fill="#22d3ee" opacity="0.65"/>
+            </svg>
+        </div>
+    </div>
+    """,
     unsafe_allow_html=True
 )
+
 st.markdown(
-    '<div class="section-subtitle">'
-    'วิเคราะห์มุมข้อต่อ ความสมมาตร ROM และ Gait Screening จากวิดีโอ'
-    '</div>',
+    """
+    <div class="mini-visual-row">
+        <div class="mini-visual">
+            <div class="icon">🧍</div>
+            <div class="label">Pose Detection</div>
+            <div class="caption">ตรวจจับโครงร่างจากวิดีโอ</div>
+        </div>
+        <div class="mini-visual">
+            <div class="icon">📐</div>
+            <div class="label">Joint Angles</div>
+            <div class="caption">Hip · Knee · Ankle</div>
+        </div>
+        <div class="mini-visual">
+            <div class="icon">⚖️</div>
+            <div class="label">Symmetry</div>
+            <div class="caption">เปรียบเทียบซ้าย–ขวา</div>
+        </div>
+    </div>
+    """,
     unsafe_allow_html=True
 )
 
@@ -1285,7 +1510,7 @@ if uploaded_file is not None:
                             "color": "#22d3ee",
                             "thickness": 0.22
                         },
-                        "bgcolor": "rgba(255,255,255,0.04)",
+                        "bgcolor": "rgba(125,211,252,0.08)",
                         "borderwidth": 0,
                         "steps": [
                             {
@@ -1355,7 +1580,7 @@ if uploaded_file is not None:
                 height=285,
                 margin=dict(l=20, r=20, t=55, b=25),
                 paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(255,255,255,0.02)",
+                plot_bgcolor="rgba(52, 92, 125, 0.18)",
                 font=dict(color="#e2e8f0"),
                 title_font=dict(color="#f8fafc"),
                 xaxis=dict(
@@ -1567,7 +1792,7 @@ if uploaded_file is not None:
                 height=420,
                 margin=dict(l=30, r=20, t=55, b=35),
                 paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(255,255,255,0.02)",
+                plot_bgcolor="rgba(52, 92, 125, 0.18)",
                 font=dict(color="#e2e8f0"),
                 title_font=dict(color="#f8fafc"),
                 xaxis=dict(
@@ -1577,6 +1802,15 @@ if uploaded_file is not None:
                     gridcolor="rgba(148,163,184,0.10)"
                 )
             )
+
+        # สีเส้นให้ตัดกับพื้นหลังและอ่านง่าย
+        for fig in [fig_knee, fig_hip, fig_ankle]:
+            if len(fig.data) >= 1:
+                fig.data[0].line.color = "#22d3ee"
+                fig.data[0].line.width = 3
+            if len(fig.data) >= 2:
+                fig.data[1].line.color = "#c084fc"
+                fig.data[1].line.width = 3
 
         tab_knee, tab_hip, tab_ankle = st.tabs(
             [
