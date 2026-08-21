@@ -83,15 +83,14 @@ r_foot = [
     landmarks[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX.value].x,
     landmarks[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX.value].y]        
                 frames_data.append({
-                   frames_data.append({
+frames_data.append({
     'Frame': frame_count,
     'Left Hip Angle': left_hip_angle,
     'Right Hip Angle': right_hip_angle,
     'Left Knee Angle': left_knee_angle,
     'Right Knee Angle': right_knee_angle,
     'Left Ankle Angle': left_ankle_angle,
-    'Right Ankle Angle': right_ankle_angle
-})
+    'Right Ankle Angle': right_ankle_angle})
                 mp_drawing.draw_landmarks(
                     image,
                     results.pose_landmarks,
