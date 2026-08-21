@@ -664,17 +664,18 @@ def calculate_rom(series):
     )
 
 
-def calculate_curve_symmetry_index(
+def calculate_curve_mae(
     left_curve,
     right_curve
 ):
     """
-    Symmetry Index สำหรับเส้นโค้ง gait cycle ที่ normalize แล้ว
+    Mean Absolute Error (MAE) ของเส้นโค้งซ้าย-ขวา หน่วยเป็นองศา
 
-    numerator   = mean(|L-R|)
-    denominator = 0.5 * [mean(|L|) + mean(|R|)]
-
-    ค่านี้ยิ่งต่ำยิ่งมีรูปแบบซ้าย-ขวาใกล้กัน
+    เหตุผลที่ใช้ MAE:
+    - ไม่หารด้วยค่ามุมเฉลี่ย
+    - ไม่เกิดค่า SI พุ่งสูงเมื่อกราฟผ่าน 0°
+    - ตีความตรงไปตรงมา เช่น MAE = 4.2° หมายถึง
+      มุมซ้าย-ขวาต่างกันเฉลี่ย 4.2° ตลอด gait cycle
     """
 
     left_curve = np.asarray(
@@ -695,26 +696,81 @@ def calculate_curve_symmetry_index(
     if valid.sum() < 5:
         return np.nan
 
-    left_curve = left_curve[valid]
-    right_curve = right_curve[valid]
-
-    denominator = 0.5 * (
-        np.mean(np.abs(left_curve))
-        + np.mean(np.abs(right_curve))
-    )
-
-    if denominator < 1e-9:
-        return 0.0
-
     return float(
         np.mean(
             np.abs(
-                left_curve - right_curve
+                left_curve[valid]
+                - right_curve[valid]
             )
         )
-        / denominator
-        * 100.0
     )
+
+
+def mae_to_score(
+    mae_deg,
+    tolerance_deg
+):
+    """
+    แปลง MAE (องศา) เป็นคะแนน 0-100
+
+    tolerance_deg เป็น system scaling constant
+    ไม่ใช่เกณฑ์วินิจฉัยทางคลินิก
+    """
+
+    if not np.isfinite(mae_deg):
+        return np.nan
+
+    if tolerance_deg <= 0:
+        return 0.0
+
+    return float(
+        np.clip(
+            100.0 * (
+                1.0
+                - mae_deg / tolerance_deg
+            ),
+            0.0,
+            100.0
+        )
+    )
+
+
+def rom_si_to_score(
+    rom_si,
+    tolerance_percent=20.0
+):
+    """
+    แปลง ROM Symmetry Index (%) เป็นคะแนน 0-100
+
+    0%  = ROM ซ้าย-ขวาเท่ากัน
+    tolerance_percent = system scaling constant
+    """
+
+    if not np.isfinite(rom_si):
+        return np.nan
+
+    return float(
+        np.clip(
+            100.0 * (
+                1.0
+                - rom_si / tolerance_percent
+            ),
+            0.0,
+            100.0
+        )
+    )
+
+
+# System scaling constants สำหรับคะแนน prototype
+# ไม่ใช่ clinical cut-off
+CURVE_MAE_TOLERANCE_DEG = {
+    "Hip": 15.0,
+    "Knee": 15.0,
+    "Ankle": 12.0,
+}
+
+PHASE_MAE_TOLERANCE_DEG = 12.0
+ROM_SI_TOLERANCE_PERCENT = 20.0
 
 
 # =========================================================
@@ -1284,14 +1340,19 @@ def calculate_gait_screening(
     """
     Gait Screening Score แบบ prototype
 
-    หลักการ:
-    1) ถ้ามี gait cycle ที่ normalize ได้:
-       ใช้ curve symmetry + ROM symmetry
-    2) ถ้ายังจับ gait cycle ไม่ได้:
-       ใช้ ROM symmetry เท่านั้น และลดความเชื่อมั่น
+    ถ้ามี normalized gait cycle:
+        40% Joint Curve Similarity
+        35% ROM Symmetry
+        25% Peak/Phase Similarity
 
-    คะแนนนี้ไม่ใช่ clinical validated score
-    และ reference band ไม่ถูกนำมาใช้วินิจฉัยโรค
+    ถ้ายังตรวจ gait cycle ไม่พอ:
+        ใช้ ROM Symmetry เป็น fallback
+        และระบุ confidence ว่าจำกัด
+
+    หมายเหตุ:
+    - Curve ใช้ MAE หน่วยองศา ไม่ใช้ Symmetry Index แบบหารด้วยมุมเฉลี่ย
+    - ROM ยังคงใช้ Symmetry Index ได้ เพราะ ROM เป็น scalar บวก
+    - คะแนนนี้เป็น system screening score ไม่ใช่ clinical validated score
     """
 
     joint_pairs = [
@@ -1312,9 +1373,18 @@ def calculate_gait_screening(
         ),
     ]
 
-    rom_si = {}
+    # =====================================================
+    # 1) ROM symmetry
+    # =====================================================
 
-    for joint, left_col, right_col in joint_pairs:
+    rom_si = {}
+    rom_scores = {}
+
+    for (
+        joint,
+        left_col,
+        right_col
+    ) in joint_pairs:
 
         left_rom = calculate_rom(
             df[left_col]
@@ -1324,9 +1394,18 @@ def calculate_gait_screening(
             df[right_col]
         )
 
-        rom_si[joint] = calculate_symmetry_index(
-            left_rom,
-            right_rom
+        rom_si[joint] = (
+            calculate_symmetry_index(
+                left_rom,
+                right_rom
+            )
+        )
+
+        rom_scores[joint] = (
+            rom_si_to_score(
+                rom_si[joint],
+                ROM_SI_TOLERANCE_PERCENT
+            )
         )
 
     overall_rom_si = float(
@@ -1337,11 +1416,33 @@ def calculate_gait_screening(
         )
     )
 
-    curve_si = {
+    rom_component_score = float(
+        np.mean(
+            list(
+                rom_scores.values()
+            )
+        )
+    )
+
+    # =====================================================
+    # 2) Curve similarity + phase similarity
+    # =====================================================
+
+    curve_mae = {
         "Hip": np.nan,
         "Knee": np.nan,
         "Ankle": np.nan,
     }
+
+    curve_scores = {
+        "Hip": np.nan,
+        "Knee": np.nan,
+        "Ankle": np.nan,
+    }
+
+    phase_mae = np.nan
+    phase_component_score = np.nan
+    curve_component_score = np.nan
 
     cycle_available = (
         cycle_analysis is not None
@@ -1353,16 +1454,24 @@ def calculate_gait_screening(
 
     if cycle_available:
 
-        left = cycle_analysis[
+        left_cycle = cycle_analysis[
             "left_cycle"
-        ]["mean_curves"]
+        ]
 
-        right = cycle_analysis[
+        right_cycle = cycle_analysis[
             "right_cycle"
-        ]["mean_curves"]
+        ]
 
-        curve_si["Hip"] = (
-            calculate_curve_symmetry_index(
+        left = left_cycle[
+            "mean_curves"
+        ]
+
+        right = right_cycle[
+            "mean_curves"
+        ]
+
+        curve_mae["Hip"] = (
+            calculate_curve_mae(
                 left[
                     "Left Hip Flexion"
                 ],
@@ -1372,8 +1481,8 @@ def calculate_gait_screening(
             )
         )
 
-        curve_si["Knee"] = (
-            calculate_curve_symmetry_index(
+        curve_mae["Knee"] = (
+            calculate_curve_mae(
                 left[
                     "Left Knee Flexion"
                 ],
@@ -1383,8 +1492,8 @@ def calculate_gait_screening(
             )
         )
 
-        curve_si["Ankle"] = (
-            calculate_curve_symmetry_index(
+        curve_mae["Ankle"] = (
+            calculate_curve_mae(
                 left[
                     "Left Ankle DF"
                 ],
@@ -1394,79 +1503,188 @@ def calculate_gait_screening(
             )
         )
 
-        finite_curve_si = [
+        for joint in [
+            "Hip",
+            "Knee",
+            "Ankle"
+        ]:
+
+            curve_scores[joint] = (
+                mae_to_score(
+                    curve_mae[joint],
+                    CURVE_MAE_TOLERANCE_DEG[
+                        joint
+                    ]
+                )
+            )
+
+        finite_curve_scores = [
             value
-            for value in curve_si.values()
+            for value in curve_scores.values()
             if np.isfinite(value)
         ]
 
-        overall_si = float(
+        curve_component_score = float(
             np.mean(
-                finite_curve_si
+                finite_curve_scores
             )
         )
 
-        # Prototype score:
-        # 75% weight = normalized curve symmetry
-        # 25% weight = ROM symmetry
-        penalty = (
-            0.75 * overall_si
-            + 0.25 * overall_rom_si
+        # ---------------------------------------------
+        # Phase / peak similarity
+        # ---------------------------------------------
+
+        gait_percent = left_cycle[
+            "percent"
+        ]
+
+        left_metrics = extract_phase_metrics(
+            gait_percent,
+            left[
+                "Left Hip Flexion"
+            ],
+            left[
+                "Left Knee Flexion"
+            ],
+            left[
+                "Left Ankle DF"
+            ]
         )
+
+        right_metrics = extract_phase_metrics(
+            gait_percent,
+            right[
+                "Right Hip Flexion"
+            ],
+            right[
+                "Right Knee Flexion"
+            ],
+            right[
+                "Right Ankle DF"
+            ]
+        )
+
+        phase_differences = []
+
+        for metric_name in left_metrics:
+
+            left_value = left_metrics[
+                metric_name
+            ]
+
+            right_value = right_metrics[
+                metric_name
+            ]
+
+            if (
+                np.isfinite(left_value)
+                and np.isfinite(right_value)
+            ):
+
+                phase_differences.append(
+                    abs(
+                        left_value
+                        - right_value
+                    )
+                )
+
+        if phase_differences:
+
+            phase_mae = float(
+                np.mean(
+                    phase_differences
+                )
+            )
+
+            phase_component_score = (
+                mae_to_score(
+                    phase_mae,
+                    PHASE_MAE_TOLERANCE_DEG
+                )
+            )
+
+        else:
+
+            phase_component_score = 0.0
+
+        # ---------------------------------------------
+        # Final weighted score
+        # ---------------------------------------------
 
         score = float(
             np.clip(
-                100.0 - 2.0 * penalty,
+                0.40
+                * curve_component_score
+                + 0.35
+                * rom_component_score
+                + 0.25
+                * phase_component_score,
                 0.0,
                 100.0
             )
         )
 
-        confidence = "สูงขึ้น (ตรวจพบ gait cycle)"
-
-    else:
-
-        overall_si = overall_rom_si
-
-        score = float(
-            np.clip(
-                100.0
-                - 2.0 * overall_rom_si,
-                0.0,
-                100.0
+        overall_curve_mae = float(
+            np.mean(
+                [
+                    value
+                    for value
+                    in curve_mae.values()
+                    if np.isfinite(value)
+                ]
             )
         )
 
         confidence = (
-            "จำกัด (ยังตรวจ gait cycle "
-            "ได้ไม่เพียงพอ)"
+            "สูงขึ้น "
+            "(ตรวจพบ normalized gait cycle)"
         )
 
-    # เกณฑ์นี้เป็น system threshold สำหรับ symmetry screening
-    if overall_si < 5:
+    else:
+
+        # ไม่มี gait cycle:
+        # ไม่สร้าง curve score ปลอม
+        overall_curve_mae = np.nan
+
+        score = rom_component_score
+
+        confidence = (
+            "จำกัด "
+            "(ยังตรวจ gait cycle ได้ไม่เพียงพอ; "
+            "คะแนนอาศัย ROM symmetry เป็นหลัก)"
+        )
+
+    # =====================================================
+    # 3) Status จาก final score
+    # =====================================================
+    # เป็น system threshold สำหรับ prototype เท่านั้น
+
+    if score >= 80:
 
         level = "normal"
 
         status = (
-            "🟢 ความสมมาตรอยู่ในเกณฑ์ระบบ"
+            "🟢 ความสมมาตรโดยรวมอยู่ในระดับดี"
         )
 
         description = (
-            "ความแตกต่างซ้าย–ขวาที่ระบบคำนวณได้อยู่ในระดับต่ำ "
-            "แต่ไม่ได้หมายความว่ายืนยันว่าเป็น gait ปกติทางคลินิก"
+            "คะแนนระบบอยู่ในระดับสูงจากการเปรียบเทียบ "
+            "joint-angle curves, ROM และ phase metrics "
+            "ที่ระบบตรวจได้"
         )
 
-    elif overall_si < 10:
+    elif score >= 60:
 
         level = "warning"
 
         status = (
-            "🟡 ควรประเมินเพิ่มเติม"
+            "🟡 พบความแตกต่างบางส่วน"
         )
 
         description = (
-            "ระบบพบความแตกต่างซ้าย–ขวาในระดับปานกลาง "
-            "ควรตรวจ joint-angle curve และ gait phase เพิ่มเติม"
+            "ระบบพบความแตกต่างซ้าย–ขวาบางส่วน "
+            "ควรพิจารณากราฟ gait cycle, ROM "
+            "และ phase metrics ร่วมกัน"
         )
 
     else:
@@ -1474,50 +1692,55 @@ def calculate_gait_screening(
         level = "danger"
 
         status = (
-            "🔴 พบความแตกต่างซ้าย–ขวาสูง"
+            "🔴 พบความแตกต่างซ้าย–ขวาค่อนข้างมาก"
         )
 
         description = (
-            "ระบบพบความแตกต่างซ้าย–ขวาค่อนข้างมาก "
+            "ระบบพบความแตกต่างซ้าย–ขวาหลายองค์ประกอบ "
             "ควรตรวจคุณภาพวิดีโอและพิจารณาการประเมินเพิ่มเติม"
         )
 
     recommendation = (
-        "ใช้ผลร่วมกับกราฟ 0–100% gait cycle, "
-        "ROM, peak joint angles และข้อมูลก่อน–หลังการใช้อุปกรณ์ "
-        "ไม่ควรใช้ค่าใดค่าเดียวเป็นตัวตัดสินความผิดปกติ"
+        "ใช้คะแนนนี้เป็นข้อมูลคัดกรองเชิงระบบเท่านั้น "
+        "ควรอ่านร่วมกับค่า Curve MAE (°), ROM Symmetry Index (%), "
+        "phase/peak difference และกราฟ 0–100% gait cycle "
+        "ไม่ควรใช้คะแนนเดียวเป็นการวินิจฉัย"
     )
 
     return {
         "status": status,
         "level": level,
         "score": score,
-        "overall_si": overall_si,
+
+        "overall_curve_mae": overall_curve_mae,
         "overall_rom_si": overall_rom_si,
-        "hip_si": (
-            curve_si["Hip"]
-            if np.isfinite(
-                curve_si["Hip"]
-            )
-            else rom_si["Hip"]
-        ),
-        "knee_si": (
-            curve_si["Knee"]
-            if np.isfinite(
-                curve_si["Knee"]
-            )
-            else rom_si["Knee"]
-        ),
-        "ankle_si": (
-            curve_si["Ankle"]
-            if np.isfinite(
-                curve_si["Ankle"]
-            )
-            else rom_si["Ankle"]
-        ),
+        "phase_mae": phase_mae,
+
+        "curve_component_score":
+            curve_component_score,
+        "rom_component_score":
+            rom_component_score,
+        "phase_component_score":
+            phase_component_score,
+
+        "hip_curve_mae":
+            curve_mae["Hip"],
+        "knee_curve_mae":
+            curve_mae["Knee"],
+        "ankle_curve_mae":
+            curve_mae["Ankle"],
+
+        "hip_curve_score":
+            curve_scores["Hip"],
+        "knee_curve_score":
+            curve_scores["Knee"],
+        "ankle_curve_score":
+            curve_scores["Ankle"],
+
         "hip_rom_si": rom_si["Hip"],
         "knee_rom_si": rom_si["Knee"],
         "ankle_rom_si": rom_si["Ankle"],
+
         "description": description,
         "recommendation": recommendation,
         "confidence": confidence,
@@ -2173,30 +2396,65 @@ if uploaded_file is not None:
             else:
                 st.info("ไม่พบภาพโครงร่างสำหรับแสดงผล")
 
-            st.metric(
-                "Hip symmetry index",
-                f"{screening['hip_si']:.2f}%"
-            )
+            if screening["cycle_available"]:
 
-            st.metric(
-                "Knee symmetry index",
-                f"{screening['knee_si']:.2f}%"
-            )
+                st.metric(
+                    "Hip Curve MAE",
+                    f"{screening['hip_curve_mae']:.2f}°"
+                )
 
-            st.metric(
-                "Ankle symmetry index",
-                f"{screening['ankle_si']:.2f}%"
-            )
+                st.metric(
+                    "Knee Curve MAE",
+                    f"{screening['knee_curve_mae']:.2f}°"
+                )
+
+                st.metric(
+                    "Ankle Curve MAE",
+                    f"{screening['ankle_curve_mae']:.2f}°"
+                )
+
+            else:
+
+                st.metric(
+                    "Hip ROM SI",
+                    f"{screening['hip_rom_si']:.2f}%"
+                )
+
+                st.metric(
+                    "Knee ROM SI",
+                    f"{screening['knee_rom_si']:.2f}%"
+                )
+
+                st.metric(
+                    "Ankle ROM SI",
+                    f"{screening['ankle_rom_si']:.2f}%"
+                )
 
         # -------------------------------------------------
         # CENTER: Symmetry Score + Stability chart
         # -------------------------------------------------
         with center_col:
 
+            curve_mae_caption = (
+                f"{screening['overall_curve_mae']:.2f}°"
+                if np.isfinite(
+                    screening["overall_curve_mae"]
+                )
+                else "N/A"
+            )
+
+            phase_mae_caption = (
+                f"{screening['phase_mae']:.2f}°"
+                if np.isfinite(
+                    screening["phase_mae"]
+                )
+                else "N/A"
+            )
+
             st.markdown(
                 f"""
                 <div class="med-card">
-                    <div class="card-title">Symmetry Score</div>
+                    <div class="card-title">Gait Screening Score</div>
                     <div class="score-number">
                         {screening['score']:.0f}%
                     </div>
@@ -2204,8 +2462,9 @@ if uploaded_file is not None:
                         {screening['status']}
                     </div>
                     <div class="score-caption">
-                        Overall SI {screening['overall_si']:.2f}% ·
-                        Overall ROM SI {screening['overall_rom_si']:.2f}%
+                        Curve MAE {curve_mae_caption} ·
+                        ROM SI {screening['overall_rom_si']:.2f}% ·
+                        Phase diff {phase_mae_caption}
                     </div>
                 </div>
                 """,
@@ -2262,66 +2521,90 @@ if uploaded_file is not None:
                 config={"displayModeBar": False}
             )
 
-            joint_si_df = pd.DataFrame({
-                "Joint": ["Hip", "Knee", "Ankle"],
-                "Symmetry Index (%)": [
-                    screening["hip_si"],
-                    screening["knee_si"],
-                    screening["ankle_si"]
-                ]
-            })
+            if screening["cycle_available"]:
 
-            fig_joint_si = px.bar(
-                joint_si_df,
-                x="Joint",
-                y="Symmetry Index (%)",
-                text_auto=".1f",
-                title="Joint Symmetry Index"
-            )
+                joint_curve_df = pd.DataFrame({
+                    "Joint": [
+                        "Hip",
+                        "Knee",
+                        "Ankle"
+                    ],
+                    "Curve MAE (°)": [
+                        screening[
+                            "hip_curve_mae"
+                        ],
+                        screening[
+                            "knee_curve_mae"
+                        ],
+                        screening[
+                            "ankle_curve_mae"
+                        ]
+                    ]
+                })
 
-            fig_joint_si.add_hline(
-                y=5,
-                line_dash="dash",
-                line_color="#facc15",
-                annotation_text="5%",
-                annotation_position="top left"
-            )
+                fig_joint_si = px.bar(
+                    joint_curve_df,
+                    x="Joint",
+                    y="Curve MAE (°)",
+                    text_auto=".1f",
+                    title=(
+                        "Mean Left–Right "
+                        "Joint Curve Difference"
+                    )
+                )
 
-            fig_joint_si.add_hline(
-                y=10,
-                line_dash="dash",
-                line_color="#fb7185",
-                annotation_text="10%",
-                annotation_position="top right"
-            )
+                fig_joint_si.update_layout(
+                    height=285,
+                    margin=dict(
+                        l=20,
+                        r=20,
+                        t=55,
+                        b=25
+                    ),
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor=(
+                        "rgba(52, 92, 125, 0.18)"
+                    ),
+                    font=dict(
+                        color="#e2e8f0"
+                    ),
+                    title_font=dict(
+                        color="#f8fafc"
+                    ),
+                    xaxis=dict(
+                        title="",
+                        gridcolor=(
+                            "rgba(148,163,184,0.10)"
+                        )
+                    ),
+                    yaxis=dict(
+                        title="Difference (°)",
+                        gridcolor=(
+                            "rgba(148,163,184,0.10)"
+                        )
+                    ),
+                    showlegend=False
+                )
 
-            fig_joint_si.update_layout(
-                height=285,
-                margin=dict(l=20, r=20, t=55, b=25),
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(52, 92, 125, 0.18)",
-                font=dict(color="#e2e8f0"),
-                title_font=dict(color="#f8fafc"),
-                xaxis=dict(
-                    title="",
-                    gridcolor="rgba(148,163,184,0.10)"
-                ),
-                yaxis=dict(
-                    title="SI (%)",
-                    gridcolor="rgba(148,163,184,0.10)"
-                ),
-                showlegend=False
-            )
+                fig_joint_si.update_traces(
+                    marker_color="#22d3ee"
+                )
 
-            fig_joint_si.update_traces(
-                marker_color="#22d3ee"
-            )
+                st.plotly_chart(
+                    fig_joint_si,
+                    use_container_width=True,
+                    config={
+                        "displayModeBar": False
+                    }
+                )
 
-            st.plotly_chart(
-                fig_joint_si,
-                use_container_width=True,
-                config={"displayModeBar": False}
-            )
+            else:
+
+                st.info(
+                    "ยังไม่แสดง Curve MAE "
+                    "เพราะระบบตรวจ gait cycle "
+                    "ได้ไม่เพียงพอ"
+                )
 
         # -------------------------------------------------
         # RIGHT: Recommendations
@@ -2340,39 +2623,110 @@ if uploaded_file is not None:
                 unsafe_allow_html=True
             )
 
-            def show_joint_status(label, value):
-                if value < 5:
-                    st.markdown(
-                        f'<div class="status-good">✓ <b>{label}</b><br>'
-                        f'SI {value:.2f}% · ความแตกต่างอยู่ในระดับต่ำ</div>',
-                        unsafe_allow_html=True
+            def show_joint_status(
+                label,
+                curve_mae,
+                rom_si,
+                tolerance_deg
+            ):
+
+                if np.isfinite(curve_mae):
+
+                    joint_score = (
+                        0.65
+                        * mae_to_score(
+                            curve_mae,
+                            tolerance_deg
+                        )
+                        + 0.35
+                        * rom_si_to_score(
+                            rom_si,
+                            ROM_SI_TOLERANCE_PERCENT
+                        )
                     )
-                elif value < 10:
-                    st.markdown(
-                        f'<div class="status-watch">△ <b>{label}</b><br>'
-                        f'SI {value:.2f}% · ควรติดตามเพิ่มเติม</div>',
-                        unsafe_allow_html=True
+
+                    detail = (
+                        f"Curve MAE {curve_mae:.2f}° · "
+                        f"ROM SI {rom_si:.2f}%"
                     )
+
                 else:
-                    st.markdown(
-                        f'<div class="status-alert">⚠ <b>{label}</b><br>'
-                        f'SI {value:.2f}% · พบความแตกต่างค่อนข้างมาก</div>',
-                        unsafe_allow_html=True
+
+                    joint_score = (
+                        rom_si_to_score(
+                            rom_si,
+                            ROM_SI_TOLERANCE_PERCENT
+                        )
                     )
+
+                    detail = (
+                        f"ROM SI {rom_si:.2f}% "
+                        "(ยังไม่มี gait cycle)"
+                    )
+
+                if joint_score >= 80:
+
+                    css_class = "status-good"
+                    symbol = "✓"
+                    message = "ความสมมาตรอยู่ในระดับดี"
+
+                elif joint_score >= 60:
+
+                    css_class = "status-watch"
+                    symbol = "△"
+                    message = "พบความแตกต่างบางส่วน"
+
+                else:
+
+                    css_class = "status-alert"
+                    symbol = "⚠"
+                    message = "พบความแตกต่างค่อนข้างมาก"
+
+                st.markdown(
+                    f'<div class="{css_class}">'
+                    f'{symbol} <b>{label}</b><br>'
+                    f'{detail}<br>'
+                    f'{message}</div>',
+                    unsafe_allow_html=True
+                )
 
             show_joint_status(
                 "Hip",
-                screening["hip_si"]
+                screening[
+                    "hip_curve_mae"
+                ],
+                screening[
+                    "hip_rom_si"
+                ],
+                CURVE_MAE_TOLERANCE_DEG[
+                    "Hip"
+                ]
             )
 
             show_joint_status(
                 "Knee",
-                screening["knee_si"]
+                screening[
+                    "knee_curve_mae"
+                ],
+                screening[
+                    "knee_rom_si"
+                ],
+                CURVE_MAE_TOLERANCE_DEG[
+                    "Knee"
+                ]
             )
 
             show_joint_status(
                 "Ankle",
-                screening["ankle_si"]
+                screening[
+                    "ankle_curve_mae"
+                ],
+                screening[
+                    "ankle_rom_si"
+                ],
+                CURVE_MAE_TOLERANCE_DEG[
+                    "Ankle"
+                ]
             )
 
             st.markdown(
@@ -2410,10 +2764,18 @@ if uploaded_file is not None:
         m1, m2, m3, m4 = st.columns(4)
 
         with m1:
-            st.metric(
-                "Overall SI",
-                f"{screening['overall_si']:.2f}%"
-            )
+            if np.isfinite(
+                screening["overall_curve_mae"]
+            ):
+                st.metric(
+                    "Overall Curve MAE",
+                    f"{screening['overall_curve_mae']:.2f}°"
+                )
+            else:
+                st.metric(
+                    "Overall Curve MAE",
+                    "N/A"
+                )
 
         with m2:
             st.metric(
@@ -2923,7 +3285,7 @@ if uploaded_file is not None:
 
         tab_knee, tab_hip, tab_ankle = st.tabs(
             [
-           "🦵 Knee",
+                "🦵 Knee",
                 "🦿 Hip",
                 "🦶 Ankle"
             ]
@@ -3047,7 +3409,7 @@ if uploaded_file is not None:
         st.divider()
 
         st.markdown(
-            '<div class="section-title">🔎 Symmetry Index รายข้อต่อ</div>',
+            '<div class="section-title">🔎 ความแตกต่างซ้าย–ขวารายข้อต่อ</div>',
             unsafe_allow_html=True
         )
 
@@ -3060,23 +3422,36 @@ if uploaded_file is not None:
                 "Ankle"
             ],
 
-            "Symmetry Index (%)": [
-                screening["hip_si"],
-                screening["knee_si"],
-                screening["ankle_si"]
+            "Curve MAE (°)": [
+                screening[
+                    "hip_curve_mae"
+                ],
+                screening[
+                    "knee_curve_mae"
+                ],
+                screening[
+                    "ankle_curve_mae"
+                ]
             ],
 
             "ROM Symmetry Index (%)": [
-                screening["hip_rom_si"],
-                screening["knee_rom_si"],
-                screening["ankle_rom_si"]
+                screening[
+                    "hip_rom_si"
+                ],
+                screening[
+                    "knee_rom_si"
+                ],
+                screening[
+                    "ankle_rom_si"
+                ]
             ]
         })
 
 
+
         st.dataframe(
             si_df.style.format({
-                "Symmetry Index (%)": "{:.2f}",
+                "Curve MAE (°)": "{:.2f}",
                 "ROM Symmetry Index (%)": "{:.2f}"
             }),
             use_container_width=True,
@@ -3101,10 +3476,13 @@ if uploaded_file is not None:
 
             st.markdown("### 🦿 Hip")
 
-            st.metric(
-                "Symmetry Index",
-                f"{screening['hip_si']:.2f}%"
-            )
+            if np.isfinite(
+                screening["hip_curve_mae"]
+            ):
+                st.metric(
+                    "Curve MAE",
+                    f"{screening['hip_curve_mae']:.2f}°"
+                )
 
             st.metric(
                 "ROM SI",
@@ -3116,10 +3494,13 @@ if uploaded_file is not None:
 
             st.markdown("### 🦵 Knee")
 
-            st.metric(
-                "Symmetry Index",
-                f"{screening['knee_si']:.2f}%"
-            )
+            if np.isfinite(
+                screening["knee_curve_mae"]
+            ):
+                st.metric(
+                    "Curve MAE",
+                    f"{screening['knee_curve_mae']:.2f}°"
+                )
 
             st.metric(
                 "ROM SI",
@@ -3131,10 +3512,13 @@ if uploaded_file is not None:
 
             st.markdown("### 🦶 Ankle")
 
-            st.metric(
-                "Symmetry Index",
-                f"{screening['ankle_si']:.2f}%"
-            )
+            if np.isfinite(
+                screening["ankle_curve_mae"]
+            ):
+                st.metric(
+                    "Curve MAE",
+                    f"{screening['ankle_curve_mae']:.2f}°"
+                )
 
             st.metric(
                 "ROM SI",
@@ -3293,7 +3677,7 @@ if uploaded_file is not None:
             """
             ⚠️ **คำเตือนสำคัญ**
 
-            Gait Screening Score และเกณฑ์การแปลผลในระบบนี้
+            Gait Screening Score และเกณฑ์สีในระบบนี้
             ใช้สำหรับการคัดกรองเบื้องต้นจากข้อมูลวิดีโอและ
             Symmetry Index เท่านั้น
 
