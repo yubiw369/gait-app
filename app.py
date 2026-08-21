@@ -476,54 +476,7 @@ st.markdown(
         </div>
 
         <div class="hero-art" aria-label="ภาพประกอบระบบติดตามท่าเดิน">
-            <svg width="280" height="190" viewBox="0 0 280 190"
-                 xmlns="http://www.w3.org/2000/svg" role="img">
-                <defs>
-                    <linearGradient id="limb" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stop-color="#e0f2fe"/>
-                        <stop offset="100%" stop-color="#93c5fd"/>
-                    </linearGradient>
-                    <filter id="glow">
-                        <feGaussianBlur stdDeviation="3.2" result="blur"/>
-                        <feMerge>
-                            <feMergeNode in="blur"/>
-                            <feMergeNode in="SourceGraphic"/>
-                        </feMerge>
-                    </filter>
-                </defs>
-
-                <circle cx="134" cy="28" r="16" fill="#eaf8ff"/>
-                <g stroke="url(#limb)" stroke-width="7" stroke-linecap="round">
-                    <line x1="134" y1="47" x2="131" y2="88"/>
-                    <line x1="131" y1="62" x2="96" y2="76"/>
-                    <line x1="96" y1="76" x2="76" y2="108"/>
-                    <line x1="131" y1="62" x2="166" y2="78"/>
-                    <line x1="166" y1="78" x2="200" y2="92"/>
-                    <line x1="131" y1="88" x2="105" y2="125"/>
-                    <line x1="105" y1="125" x2="72" y2="160"/>
-                    <line x1="131" y1="88" x2="160" y2="125"/>
-                    <line x1="160" y1="125" x2="180" y2="164"/>
-                </g>
-
-                <g filter="url(#glow)">
-                    <circle cx="131" cy="62" r="8" fill="#22d3ee"/>
-                    <circle cx="96" cy="76" r="7" fill="#67e8f9"/>
-                    <circle cx="76" cy="108" r="7" fill="#22d3ee"/>
-                    <circle cx="166" cy="78" r="7" fill="#c084fc"/>
-                    <circle cx="200" cy="92" r="7" fill="#a855f7"/>
-                    <circle cx="131" cy="88" r="9" fill="#67e8f9"/>
-                    <circle cx="105" cy="125" r="8" fill="#22d3ee"/>
-                    <circle cx="72" cy="160" r="8" fill="#67e8f9"/>
-                    <circle cx="160" cy="125" r="8" fill="#c084fc"/>
-                    <circle cx="180" cy="164" r="8" fill="#a855f7"/>
-                </g>
-
-                <path d="M18 145 C55 125, 63 158, 98 142 S150 118, 194 136 S238 148, 266 118"
-                      fill="none" stroke="#22d3ee" stroke-width="2.5" opacity="0.75"/>
-                <path d="M18 155 H265" stroke="#7dd3fc" stroke-width="1" opacity="0.18"/>
-                <circle cx="232" cy="42" r="22" fill="none" stroke="#67e8f9" stroke-width="2" opacity="0.55"/>
-                <circle cx="232" cy="42" r="9" fill="#22d3ee" opacity="0.65"/>
-            </svg>
+            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjgwIiBoZWlnaHQ9IjE5MCIgdmlld0JveD0iMCAwIDI4MCAxOTAiCiAgICAgICAgICAgICAgICAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiByb2xlPSJpbWciPgogICAgICAgICAgICAgICAgPGRlZnM+CiAgICAgICAgICAgICAgICAgICAgPGxpbmVhckdyYWRpZW50IGlkPSJsaW1iIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+CiAgICAgICAgICAgICAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNlMGYyZmUiLz4KICAgICAgICAgICAgICAgICAgICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjOTNjNWZkIi8+CiAgICAgICAgICAgICAgICAgICAgPC9saW5lYXJHcmFkaWVudD4KICAgICAgICAgICAgICAgICAgICA8ZmlsdGVyIGlkPSJnbG93Ij4KICAgICAgICAgICAgICAgICAgICAgICAgPGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iMy4yIiByZXN1bHQ9ImJsdXIiLz4KICAgICAgICAgICAgICAgICAgICAgICAgPGZlTWVyZ2U+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8ZmVNZXJnZU5vZGUgaW49ImJsdXIiLz4KICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxmZU1lcmdlTm9kZSBpbj0iU291cmNlR3JhcGhpYyIvPgogICAgICAgICAgICAgICAgICAgICAgICA8L2ZlTWVyZ2U+CiAgICAgICAgICAgICAgICAgICAgPC9maWx0ZXI+CiAgICAgICAgICAgICAgICA8L2RlZnM+CgogICAgICAgICAgICAgICAgPGNpcmNsZSBjeD0iMTM0IiBjeT0iMjgiIHI9IjE2IiBmaWxsPSIjZWFmOGZmIi8+CiAgICAgICAgICAgICAgICA8ZyBzdHJva2U9InVybCgjbGltYikiIHN0cm9rZS13aWR0aD0iNyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj4KICAgICAgICAgICAgICAgICAgICA8bGluZSB4MT0iMTM0IiB5MT0iNDciIHgyPSIxMzEiIHkyPSI4OCIvPgogICAgICAgICAgICAgICAgICAgIDxsaW5lIHgxPSIxMzEiIHkxPSI2MiIgeDI9Ijk2IiB5Mj0iNzYiLz4KICAgICAgICAgICAgICAgICAgICA8bGluZSB4MT0iOTYiIHkxPSI3NiIgeDI9Ijc2IiB5Mj0iMTA4Ii8+CiAgICAgICAgICAgICAgICAgICAgPGxpbmUgeDE9IjEzMSIgeTE9IjYyIiB4Mj0iMTY2IiB5Mj0iNzgiLz4KICAgICAgICAgICAgICAgICAgICA8bGluZSB4MT0iMTY2IiB5MT0iNzgiIHgyPSIyMDAiIHkyPSI5MiIvPgogICAgICAgICAgICAgICAgICAgIDxsaW5lIHgxPSIxMzEiIHkxPSI4OCIgeDI9IjEwNSIgeTI9IjEyNSIvPgogICAgICAgICAgICAgICAgICAgIDxsaW5lIHgxPSIxMDUiIHkxPSIxMjUiIHgyPSI3MiIgeTI9IjE2MCIvPgogICAgICAgICAgICAgICAgICAgIDxsaW5lIHgxPSIxMzEiIHkxPSI4OCIgeDI9IjE2MCIgeTI9IjEyNSIvPgogICAgICAgICAgICAgICAgICAgIDxsaW5lIHgxPSIxNjAiIHkxPSIxMjUiIHgyPSIxODAiIHkyPSIxNjQiLz4KICAgICAgICAgICAgICAgIDwvZz4KCiAgICAgICAgICAgICAgICA8ZyBmaWx0ZXI9InVybCgjZ2xvdykiPgogICAgICAgICAgICAgICAgICAgIDxjaXJjbGUgY3g9IjEzMSIgY3k9IjYyIiByPSI4IiBmaWxsPSIjMjJkM2VlIi8+CiAgICAgICAgICAgICAgICAgICAgPGNpcmNsZSBjeD0iOTYiIGN5PSI3NiIgcj0iNyIgZmlsbD0iIzY3ZThmOSIvPgogICAgICAgICAgICAgICAgICAgIDxjaXJjbGUgY3g9Ijc2IiBjeT0iMTA4IiByPSI3IiBmaWxsPSIjMjJkM2VlIi8+CiAgICAgICAgICAgICAgICAgICAgPGNpcmNsZSBjeD0iMTY2IiBjeT0iNzgiIHI9IjciIGZpbGw9IiNjMDg0ZmMiLz4KICAgICAgICAgICAgICAgICAgICA8Y2lyY2xlIGN4PSIyMDAiIGN5PSI5MiIgcj0iNyIgZmlsbD0iI2E4NTVmNyIvPgogICAgICAgICAgICAgICAgICAgIDxjaXJjbGUgY3g9IjEzMSIgY3k9Ijg4IiByPSI5IiBmaWxsPSIjNjdlOGY5Ii8+CiAgICAgICAgICAgICAgICAgICAgPGNpcmNsZSBjeD0iMTA1IiBjeT0iMTI1IiByPSI4IiBmaWxsPSIjMjJkM2VlIi8+CiAgICAgICAgICAgICAgICAgICAgPGNpcmNsZSBjeD0iNzIiIGN5PSIxNjAiIHI9IjgiIGZpbGw9IiM2N2U4ZjkiLz4KICAgICAgICAgICAgICAgICAgICA8Y2lyY2xlIGN4PSIxNjAiIGN5PSIxMjUiIHI9IjgiIGZpbGw9IiNjMDg0ZmMiLz4KICAgICAgICAgICAgICAgICAgICA8Y2lyY2xlIGN4PSIxODAiIGN5PSIxNjQiIHI9IjgiIGZpbGw9IiNhODU1ZjciLz4KICAgICAgICAgICAgICAgIDwvZz4KCiAgICAgICAgICAgICAgICA8cGF0aCBkPSJNMTggMTQ1IEM1NSAxMjUsIDYzIDE1OCwgOTggMTQyIFMxNTAgMTE4LCAxOTQgMTM2IFMyMzggMTQ4LCAyNjYgMTE4IgogICAgICAgICAgICAgICAgICAgICAgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMjJkM2VlIiBzdHJva2Utd2lkdGg9IjIuNSIgb3BhY2l0eT0iMC43NSIvPgogICAgICAgICAgICAgICAgPHBhdGggZD0iTTE4IDE1NSBIMjY1IiBzdHJva2U9IiM3ZGQzZmMiIHN0cm9rZS13aWR0aD0iMSIgb3BhY2l0eT0iMC4xOCIvPgogICAgICAgICAgICAgICAgPGNpcmNsZSBjeD0iMjMyIiBjeT0iNDIiIHI9IjIyIiBmaWxsPSJub25lIiBzdHJva2U9IiM2N2U4ZjkiIHN0cm9rZS13aWR0aD0iMiIgb3BhY2l0eT0iMC41NSIvPgogICAgICAgICAgICAgICAgPGNpcmNsZSBjeD0iMjMyIiBjeT0iNDIiIHI9IjkiIGZpbGw9IiMyMmQzZWUiIG9wYWNpdHk9IjAuNjUiLz4KICAgICAgICAgICAgPC9zdmc+" alt="ภาพประกอบระบบติดตามท่าเดิน" style="width:280px;max-width:100%;height:auto;display:block;margin:auto;" />
         </div>
     </div>
     """,
@@ -2970,7 +2923,7 @@ if uploaded_file is not None:
 
         tab_knee, tab_hip, tab_ankle = st.tabs(
             [
-                "🦵 Knee",
+           "🦵 Knee",
                 "🦿 Hip",
                 "🦶 Ankle"
             ]
