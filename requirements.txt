@@ -3,5 +3,5 @@ numpy
 pandas
 plotly
 opencv-python-headless
-mediapipe
+mediapipe==0.10.15
 matplotlib
