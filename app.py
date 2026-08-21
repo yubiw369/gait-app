@@ -58,7 +58,102 @@ def calculate_symmetry_index(left_val, right_val):
 # 5. ฟังก์ชันคำนวณ ROM
 # =========================================================
 def calculate_rom(series):
-    return float(series.max() - series.min())
+    return float(series.max() - series.min()) 
+    # =========================================================
+# 6. ฟังก์ชันประเมิน Gait Screening
+# =========================================================
+def calculate_gait_screening(df):
+    """
+    ประเมินความสมมาตรของการเคลื่อนไหวเบื้องต้น
+    ใช้สำหรับ Gait Screening เท่านั้น
+    ไม่ใช่การวินิจฉัยทางการแพทย์
+    """
+
+    # -----------------------------------------------------
+    # คำนวณค่าเฉลี่ยของมุมแต่ละข้าง
+    # -----------------------------------------------------
+    left_knee = df["Left Knee Angle"].mean()
+    right_knee = df["Right Knee Angle"].mean()
+
+    left_hip = df["Left Hip Angle"].mean()
+    right_hip = df["Right Hip Angle"].mean()
+
+    left_ankle = df["Left Ankle Angle"].mean()
+    right_ankle = df["Right Ankle Angle"].mean()
+
+    # -----------------------------------------------------
+    # คำนวณ Symmetry Index
+    # -----------------------------------------------------
+    knee_si = calculate_symmetry_index(
+        left_knee,
+        right_knee
+    )
+
+    hip_si = calculate_symmetry_index(
+        left_hip,
+        right_hip
+    )
+
+    ankle_si = calculate_symmetry_index(
+        left_ankle,
+        right_ankle
+    )
+
+    # -----------------------------------------------------
+    # ค่าเฉลี่ย Symmetry Index รวม
+    # -----------------------------------------------------
+    overall_si = np.mean([
+        knee_si,
+        hip_si,
+        ankle_si
+    ])
+
+    # -----------------------------------------------------
+    # แปลงเป็นคะแนน Gait Screening Score
+    #
+    # SI ต่ำ = สมมาตรมาก = คะแนนสูง
+    # -----------------------------------------------------
+    score = max(
+        0,
+        min(
+            100,
+            100 - (overall_si * 2)
+        )
+    )
+
+    # -----------------------------------------------------
+    # ประเมินระดับ
+    # -----------------------------------------------------
+    if overall_si < 5:
+        status = "🟢 ปกติ"
+        description = (
+            "พบความแตกต่างระหว่างซ้ายและขวาในระดับต่ำ "
+            "จากข้อมูลมุมข้อต่อที่วิเคราะห์ได้"
+        )
+
+    elif overall_si < 10:
+        status = "🟡 ควรประเมินเพิ่มเติม"
+        description = (
+            "พบความแตกต่างระหว่างซ้ายและขวาในระดับปานกลาง "
+            "ควรพิจารณาข้อมูลเพิ่มเติมและสังเกตลักษณะการเดิน"
+        )
+
+    else:
+        status = "🔴 พบความแตกต่างมาก"
+        description = (
+            "พบความแตกต่างระหว่างซ้ายและขวาค่อนข้างมาก "
+            "ควรได้รับการประเมินการเดินเพิ่มเติมโดยผู้เชี่ยวชาญ"
+        )
+
+    return {
+        "status": status,
+        "score": score,
+        "overall_si": overall_si,
+        "knee_si": knee_si,
+        "hip_si": hip_si,
+        "ankle_si": ankle_si,
+        "description": description
+    }
 # =========================================================
 # 6. อัปโหลดวิดีโอ
 # =========================================================
