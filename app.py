@@ -2791,45 +2791,35 @@ if uploaded_file is not None:
                 f"score-status-{screening['level']}"
             )
 
-            st.markdown(
-                f"""
-                <div class="med-card">
-                    <div class="card-title">Gait Screening Score</div>
+score_html = f"""<div class="med-card">
+<div class="card-title">Gait Screening Score</div>
+<div class="score-number">{screening['score']:.0f}<span class="score-unit">/100</span></div>
+<div class="screening-status {status_css_class}">{screening['status']}</div>
+<div class="score-caption">
+Curve MAE {curve_mae_caption} &nbsp;·&nbsp;
+ROM SI {screening['overall_rom_si']:.2f}% &nbsp;·&nbsp;
+Phase Difference {phase_mae_caption}
+</div>
+</div>
+<div class="model-strip">
+<div class="model-cell">
+<div class="model-weight">40%</div>
+<div class="model-label">Joint Curve</div>
+</div>
+<div class="model-cell">
+<div class="model-weight">35%</div>
+<div class="model-label">ROM Symmetry</div>
+</div>
+<div class="model-cell">
+<div class="model-weight">25%</div>
+<div class="model-label">Phase / Peak</div>
+</div>
+</div>"""
 
-                    <div class="score-number">
-                        {screening['score']:.0f}
-                        <span class="score-unit">/100</span>
-                    </div>
-
-                    <div class="screening-status {status_css_class}">
-                        {screening['status']}
-                    </div>
-
-                    <div class="score-caption">
-                        Curve MAE {curve_mae_caption} &nbsp;·&nbsp;
-                        ROM SI {screening['overall_rom_si']:.2f}% &nbsp;·&nbsp;
-                        Phase Difference {phase_mae_caption}
-                    </div>
-                </div>
-
-                <div class="model-strip">
-                    <div class="model-cell">
-                        <div class="model-weight">40%</div>
-                        <div class="model-label">Joint Curve</div>
-                    </div>
-                    <div class="model-cell">
-                        <div class="model-weight">35%</div>
-                        <div class="model-label">ROM Symmetry</div>
-                    </div>
-                    <div class="model-cell">
-                        <div class="model-weight">25%</div>
-                        <div class="model-label">Phase / Peak</div>
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
+st.markdown(
+    score_html,
+    unsafe_allow_html=True
+)
             fig_gauge = go.Figure(
                 go.Indicator(
                     mode="gauge+number",
