@@ -729,11 +729,6 @@ st.markdown(
                 <div class="brand-sub">Markerless Gait Screening Platform</div>
             </div>
         </div>
-
-        <div class="system-badge">
-            <span class="system-dot"></span>
-            Research Prototype
-        </div>
     </div>
     """,
     unsafe_allow_html=True
@@ -755,39 +750,6 @@ st.markdown(
                 Curve MAE, ROM Symmetry และ Phase-based metrics
                 เพื่อช่วยคัดกรองและติดตามความเปลี่ยนแปลงอย่างเป็นระบบ
             </div>
-
-            <div class="hero-tags">
-                <span class="hero-tag">2D Pose Tracking</span>
-                <span class="hero-tag">Gait Cycle 0–100%</span>
-                <span class="hero-tag">Curve MAE</span>
-                <span class="hero-tag">ROM Symmetry</span>
-                <span class="hero-tag">Phase Metrics</span>
-            </div>
-        </div>
-
-        <div class="telemetry-panel">
-            <div class="telemetry-title">Analysis Pipeline</div>
-
-            <div class="telemetry-row">
-                <span class="telemetry-label">Pose Engine</span>
-                <span class="telemetry-value">MediaPipe Pose</span>
-            </div>
-
-            <div class="telemetry-row">
-                <span class="telemetry-label">Plane</span>
-                <span class="telemetry-value">Sagittal / 2D</span>
-            </div>
-
-            <div class="telemetry-row">
-                <span class="telemetry-label">Cycle Model</span>
-                <span class="telemetry-value">Estimated IC / Stride Anchor</span>
-            </div>
-
-            <div class="telemetry-row">
-                <span class="telemetry-label">Score Model</span>
-                <span class="telemetry-value">40 / 35 / 25</span>
-            </div>
-        </div>
     </div>
     """,
     unsafe_allow_html=True
