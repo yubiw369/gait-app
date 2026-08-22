@@ -1,5 +1,6 @@
 import os
 import tempfile
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -15,8 +16,6 @@ import mediapipe as mp
 # =========================================================
 
 mp_pose = mp.solutions.pose
-mp_drawing = mp.solutions.drawing_utils
-mp_drawing_styles = mp.solutions.drawing_styles
 
 
 # =========================================================
@@ -781,7 +780,7 @@ st.markdown(
 
             <div class="telemetry-row">
                 <span class="telemetry-label">Cycle Model</span>
-                <span class="telemetry-value">Heel-strike Normalized</span>
+                <span class="telemetry-value">Estimated IC / Stride Anchor</span>
             </div>
 
             <div class="telemetry-row">
@@ -906,6 +905,185 @@ def clinical_hip_flexion(
         return float(magnitude)
 
     return float(-magnitude)
+
+
+
+# =========================================================
+# 5.1 Lower-limb Joint Tracking Visualization
+# =========================================================
+
+def normalized_to_pixel(point, image_shape):
+    """Convert MediaPipe normalized (x, y) coordinates to image pixels."""
+    height, width = image_shape[:2]
+    x = int(np.clip(point[0], 0.0, 1.0) * (width - 1))
+    y = int(np.clip(point[1], 0.0, 1.0) * (height - 1))
+    return x, y
+
+
+def draw_text_box(image, text, origin, color, font_scale=0.48):
+    """Draw a compact high-contrast label on an RGB frame."""
+    x, y = origin
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    thickness = 1
+    (text_w, text_h), baseline = cv2.getTextSize(
+        text, font, font_scale, thickness
+    )
+    height, width = image.shape[:2]
+    x = int(np.clip(x, 4, max(4, width - text_w - 10)))
+    y = int(np.clip(y, text_h + 8, max(text_h + 8, height - baseline - 5)))
+    top_left = (x - 4, y - text_h - 6)
+    bottom_right = (x + text_w + 5, y + baseline + 4)
+    overlay = image.copy()
+    cv2.rectangle(overlay, top_left, bottom_right, (4, 18, 31), -1)
+    cv2.addWeighted(overlay, 0.76, image, 0.24, 0, image)
+    cv2.rectangle(image, top_left, bottom_right, color, 1)
+    cv2.putText(
+        image, text, (x, y), font, font_scale,
+        (245, 250, 255), thickness, cv2.LINE_AA
+    )
+
+
+def draw_lower_limb_tracking(
+    image_rgb,
+    points,
+    angles,
+    visibilities,
+    frame_number,
+    time_seconds,
+    min_visibility=0.50,
+    show_angle_labels=True,
+):
+    """
+    Draw frame-by-frame sagittal lower-limb tracking.
+
+    Left side: cyan. Right side: violet.
+    Main tracked joints: hip, knee, ankle, plus shoulder/heel/foot context.
+    This is a 2D markerless visualization, not a 3D laboratory marker model.
+    """
+    canvas = image_rgb.copy()
+    left_color = (34, 211, 238)
+    right_color = (192, 132, 252)
+    neutral_color = (226, 232, 240)
+    muted_color = (148, 163, 184)
+
+    side_config = {
+        'Left': {
+            'prefix': 'L', 'color': left_color,
+            'chain': ['shoulder', 'hip', 'knee', 'ankle', 'foot'],
+        },
+        'Right': {
+            'prefix': 'R', 'color': right_color,
+            'chain': ['shoulder', 'hip', 'knee', 'ankle', 'foot'],
+        },
+    }
+
+    # Header
+    header = canvas.copy()
+    cv2.rectangle(header, (0, 0), (canvas.shape[1], 48), (3, 16, 28), -1)
+    cv2.addWeighted(header, 0.78, canvas, 0.22, 0, canvas)
+    cv2.putText(
+        canvas,
+        f'MEDICAL GAIT AI  |  FRAME {frame_number}  |  {time_seconds:.2f} s',
+        (14, 29), cv2.FONT_HERSHEY_SIMPLEX, 0.58,
+        neutral_color, 1, cv2.LINE_AA,
+    )
+
+    for side, config in side_config.items():
+        color = config['color']
+        prefix = config['prefix']
+        chain = config['chain']
+
+        for first_name, second_name in zip(chain[:-1], chain[1:]):
+            key_a = f'{side}_{first_name}'
+            key_b = f'{side}_{second_name}'
+            if (
+                visibilities.get(key_a, 0.0) < min_visibility
+                or visibilities.get(key_b, 0.0) < min_visibility
+            ):
+                continue
+            cv2.line(
+                canvas,
+                normalized_to_pixel(points[key_a], canvas.shape),
+                normalized_to_pixel(points[key_b], canvas.shape),
+                color, 4, cv2.LINE_AA,
+            )
+
+        ankle_key = f'{side}_ankle'
+        heel_key = f'{side}_heel'
+        if (
+            visibilities.get(ankle_key, 0.0) >= min_visibility
+            and visibilities.get(heel_key, 0.0) >= min_visibility
+        ):
+            cv2.line(
+                canvas,
+                normalized_to_pixel(points[ankle_key], canvas.shape),
+                normalized_to_pixel(points[heel_key], canvas.shape),
+                color, 3, cv2.LINE_AA,
+            )
+
+        for joint_name in ['shoulder', 'hip', 'knee', 'ankle', 'heel', 'foot']:
+            key = f'{side}_{joint_name}'
+            if key not in points or visibilities.get(key, 0.0) < min_visibility:
+                continue
+            center = normalized_to_pixel(points[key], canvas.shape)
+            radius = 8 if joint_name in ['hip', 'knee', 'ankle'] else 5
+            cv2.circle(canvas, center, radius + 3, (5, 24, 39), -1, cv2.LINE_AA)
+            cv2.circle(canvas, center, radius, color, -1, cv2.LINE_AA)
+            cv2.circle(canvas, center, radius, neutral_color, 1, cv2.LINE_AA)
+
+        if show_angle_labels:
+            labels = [
+                ('hip', f'{prefix} HIP {angles[f"{side}_hip"]:+.1f} deg'),
+                ('knee', f'{prefix} KNEE {angles[f"{side}_knee"]:.1f} deg'),
+                ('ankle', f'{prefix} ANKLE {angles[f"{side}_ankle"]:+.1f} deg'),
+            ]
+            for joint_name, label in labels:
+                key = f'{side}_{joint_name}'
+                if visibilities.get(key, 0.0) < min_visibility:
+                    continue
+                joint_px = normalized_to_pixel(points[key], canvas.shape)
+                x_offset = 12 if side == 'Left' else -125
+                draw_text_box(
+                    canvas, label,
+                    (joint_px[0] + x_offset, joint_px[1] - 10),
+                    color,
+                )
+
+    if (
+        visibilities.get('Left_hip', 0.0) >= min_visibility
+        and visibilities.get('Right_hip', 0.0) >= min_visibility
+    ):
+        cv2.line(
+            canvas,
+            normalized_to_pixel(points['Left_hip'], canvas.shape),
+            normalized_to_pixel(points['Right_hip'], canvas.shape),
+            muted_color, 2, cv2.LINE_AA,
+        )
+
+    # Legend
+    legend_y = canvas.shape[0] - 18
+    cv2.circle(canvas, (18, legend_y - 5), 5, left_color, -1)
+    cv2.putText(canvas, 'LEFT', (30, legend_y), cv2.FONT_HERSHEY_SIMPLEX,
+                0.42, neutral_color, 1, cv2.LINE_AA)
+    cv2.circle(canvas, (88, legend_y - 5), 5, right_color, -1)
+    cv2.putText(canvas, 'RIGHT', (100, legend_y), cv2.FONT_HERSHEY_SIMPLEX,
+                0.42, neutral_color, 1, cv2.LINE_AA)
+    return canvas
+
+
+def draw_pose_not_detected(image_rgb, frame_number, time_seconds):
+    """Overlay status when no pose is detected in the current frame."""
+    canvas = image_rgb.copy()
+    overlay = canvas.copy()
+    cv2.rectangle(overlay, (0, 0), (canvas.shape[1], 48), (3, 16, 28), -1)
+    cv2.addWeighted(overlay, 0.78, canvas, 0.22, 0, canvas)
+    cv2.putText(
+        canvas,
+        f'FRAME {frame_number}  |  {time_seconds:.2f} s  |  POSE NOT DETECTED',
+        (14, 29), cv2.FONT_HERSHEY_SIMPLEX, 0.55,
+        (251, 113, 133), 1, cv2.LINE_AA,
+    )
+    return canvas
 
 
 # =========================================================
@@ -1162,14 +1340,16 @@ def detect_heel_strikes(
     prominence=0.015
 ):
     """
-    ตรวจ heel-strike แบบ heuristic จากตำแหน่งส้นเท้า
+    ตรวจ estimated stride anchor แบบ heuristic จากตำแหน่งส้นเท้า
     ที่อยู่ด้านหน้าสุดเมื่อเทียบกับ pelvis
+
+    ใช้เป็นตัวประมาณสำหรับ normalize stride cycle ในวิดีโอด้านข้าง
+    ไม่ใช่ ground-contact / heel-strike ที่ยืนยันด้วย force plate
 
     เหมาะกับ:
     - วิดีโอด้านข้าง
-    - ผู้เดินผ่านกล้องหรือ treadmill ที่เห็นเท้าชัด
-
-    ไม่ใช่ force-plate event detection
+    - เห็นเท้าและส้นเท้าชัด
+    - กล้องนิ่ง
     """
 
     values = np.asarray(
@@ -1395,8 +1575,11 @@ def build_gait_cycle_analysis(
     fps
 ):
     """
-    สร้าง gait cycle แยกซ้าย/ขวา
+    สร้าง stride cycle แยกซ้าย/ขวาจาก estimated stride anchors
     แล้ว normalize เป็น 0-100%
+
+    event ในเวอร์ชันนี้เป็น heuristic จากวิดีโอ 2D
+    ไม่ใช่ force-plate ground-contact event
     """
 
     required = [
@@ -2156,6 +2339,33 @@ with st.sidebar:
 
     st.divider()
 
+    st.markdown("### Live Joint Tracking")
+
+    show_live_tracking = st.checkbox(
+        "แสดงภาพการจับข้อต่อทุกเฟรม",
+        value=True,
+        help=(
+            "อัปเดตภาพ Hip / Knee / Ankle ในทุกเฟรมที่ประมวลผล "
+            "การเปิดใช้งานอาจทำให้วิดีโอยาวประมวลผลช้าลงเล็กน้อย"
+        )
+    )
+
+    show_angle_labels = st.checkbox(
+        "แสดงค่ามุมบนภาพ",
+        value=True
+    )
+
+    min_landmark_visibility = st.slider(
+        "Landmark visibility ขั้นต่ำ",
+        min_value=0.30,
+        max_value=0.90,
+        value=0.50,
+        step=0.05,
+        help="จุดที่มี visibility ต่ำกว่าค่านี้จะไม่ถูกวาดบนภาพ"
+    )
+
+    st.divider()
+
     st.markdown("### ⚠️ ข้อควรทราบ")
 
     st.caption(
@@ -2176,7 +2386,7 @@ st.markdown(
 
 st.markdown(
     '<div class="section-subtitle">'
-    'ระบบจะพยายามตรวจ heel-strike และ normalize การเดินเป็น 0–100% gait cycle '
+    'ระบบจะพยายามตรวจ estimated stride anchors และ normalize การเดินเป็น 0–100% stride cycle '
     'หากข้อมูลเพียงพอ'
     '</div>',
     unsafe_allow_html=True
@@ -2203,9 +2413,20 @@ if uploaded_file is not None:
     # บันทึกไฟล์ชั่วคราว
     # =====================================================
 
+    uploaded_suffix = Path(
+        uploaded_file.name
+    ).suffix.lower()
+
+    if uploaded_suffix not in {
+        ".mp4",
+        ".mov",
+        ".avi"
+    }:
+        uploaded_suffix = ".mp4"
+
     tfile = tempfile.NamedTemporaryFile(
         delete=False,
-        suffix=".mp4"
+        suffix=uploaded_suffix
     )
 
     tfile.write(
@@ -2224,6 +2445,19 @@ if uploaded_file is not None:
     cap = cv2.VideoCapture(
         video_path
     )
+
+    if not cap.isOpened():
+
+        try:
+            os.remove(video_path)
+        except OSError:
+            pass
+
+        st.error(
+            "ไม่สามารถเปิดไฟล์วิดีโอด้วย OpenCV ได้ "
+            "กรุณาลอง MP4 (H.264), MOV หรือ AVI ที่อ่านได้ตามปกติ"
+        )
+        st.stop()
 
     total_frames = int(
         cap.get(
@@ -2251,22 +2485,22 @@ if uploaded_file is not None:
     with info1:
 
         st.metric(
-            "🎞️ จำนวนเฟรม",
+            "Video Frames",
             f"{total_frames:,}"
         )
 
     with info2:
 
         st.metric(
-            "⏱️ FPS",
-            f"{fps:.1f}"
+            "Frame Rate",
+            f"{fps:.1f} FPS"
         )
 
     with info3:
 
         st.metric(
-            "🕐 ความยาว",
-            f"{duration:.1f} วินาที"
+            "Duration",
+            f"{duration:.1f} s"
         )
 
 
@@ -2280,7 +2514,28 @@ if uploaded_file is not None:
 
     frame_count = 0
 
-    st_frame = st.empty()
+    pose_detected_count = 0
+
+    st.markdown(
+        '<div class="section-title">Live Joint Tracking · Frame-by-frame</div>',
+        unsafe_allow_html=True
+    )
+
+    st.caption(
+        "ติดตาม Hip / Knee / Ankle ทุกเฟรม: cyan = Left, violet = Right. "
+        "ค่ามุมเป็นผลจากการวิเคราะห์ 2D sagittal-plane ของระบบ"
+    )
+
+    live_frame_col, live_status_col = st.columns(
+        [1.75, 0.65],
+        gap="medium"
+    )
+
+    with live_frame_col:
+        st_frame = st.empty()
+
+    with live_status_col:
+        live_status = st.empty()
 
     progress_bar = st.progress(0)
 
@@ -2469,6 +2724,36 @@ if uploaded_file is not None:
                     ].y
                 ]
 
+                tracking_points = {
+                    "Left_shoulder": l_shoulder,
+                    "Left_hip": l_hip,
+                    "Left_knee": l_knee,
+                    "Left_ankle": l_ankle,
+                    "Left_heel": l_heel,
+                    "Left_foot": l_foot,
+                    "Right_shoulder": r_shoulder,
+                    "Right_hip": r_hip,
+                    "Right_knee": r_knee,
+                    "Right_ankle": r_ankle,
+                    "Right_heel": r_heel,
+                    "Right_foot": r_foot,
+                }
+
+                tracking_visibilities = {
+                    "Left_shoulder": float(landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].visibility),
+                    "Left_hip": float(landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].visibility),
+                    "Left_knee": float(landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].visibility),
+                    "Left_ankle": float(landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].visibility),
+                    "Left_heel": float(landmarks[mp_pose.PoseLandmark.LEFT_HEEL.value].visibility),
+                    "Left_foot": float(landmarks[mp_pose.PoseLandmark.LEFT_FOOT_INDEX.value].visibility),
+                    "Right_shoulder": float(landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].visibility),
+                    "Right_hip": float(landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].visibility),
+                    "Right_knee": float(landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].visibility),
+                    "Right_ankle": float(landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].visibility),
+                    "Right_heel": float(landmarks[mp_pose.PoseLandmark.RIGHT_HEEL.value].visibility),
+                    "Right_foot": float(landmarks[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX.value].visibility),
+                }
+
 
                 # =================================================
                 # คำนวณมุมเชิงคลินิกใน sagittal plane
@@ -2559,30 +2844,47 @@ if uploaded_file is not None:
                         left_heel_forward,
 
                     "Right Heel Forward":
-                        right_heel_forward
+                        right_heel_forward,
+
+                    "Left Hip Visibility": tracking_visibilities["Left_hip"],
+                    "Left Knee Visibility": tracking_visibilities["Left_knee"],
+                    "Left Ankle Visibility": tracking_visibilities["Left_ankle"],
+                    "Right Hip Visibility": tracking_visibilities["Right_hip"],
+                    "Right Knee Visibility": tracking_visibilities["Right_knee"],
+                    "Right Ankle Visibility": tracking_visibilities["Right_ankle"]
                 })
 
+                pose_detected_count += 1
 
-                # =================================================
-                # วาด Skeleton
-                # =================================================
+                joint_angles = {
+                    "Left_hip": left_hip_angle,
+                    "Left_knee": left_knee_angle,
+                    "Left_ankle": left_ankle_angle,
+                    "Right_hip": right_hip_angle,
+                    "Right_knee": right_knee_angle,
+                    "Right_ankle": right_ankle_angle,
+                }
 
-                mp_drawing.draw_landmarks(
-
+                display_image = draw_lower_limb_tracking(
                     image,
-
-                    results.pose_landmarks,
-
-                    mp_pose.POSE_CONNECTIONS,
-
-                    landmark_drawing_spec=(
-                        mp_drawing_styles
-                        .get_default_pose_landmarks_style()
-                    )
+                    tracking_points,
+                    joint_angles,
+                    tracking_visibilities,
+                    frame_number=frame_count,
+                    time_seconds=(frame_count / fps),
+                    min_visibility=min_landmark_visibility,
+                    show_angle_labels=show_angle_labels
                 )
 
-                # เก็บเฟรมล่าสุดที่ตรวจพบโครงร่างสำหรับ Dashboard
-                last_pose_image = image.copy()
+                last_pose_image = display_image.copy()
+
+            else:
+
+                display_image = draw_pose_not_detected(
+                    image,
+                    frame_number=frame_count,
+                    time_seconds=(frame_count / fps)
+                )
 
 
             # =================================================
@@ -2598,23 +2900,41 @@ if uploaded_file is not None:
                 progress
             )
 
+            detection_rate_live = (
+                pose_detected_count
+                / max(frame_count, 1)
+                * 100.0
+            )
+
             status_text.text(
                 f"กำลังวิเคราะห์เฟรม "
                 f"{frame_count:,}/{total_frames:,}"
             )
 
-
-            # -------------------------------------------------
-            # แสดงทุก 2 Frame
-            # -------------------------------------------------
-
-            if frame_count % 2 == 0:
-
+            # แสดงภาพการจับข้อต่อแบบ frame-by-frame
+            if show_live_tracking:
                 st_frame.image(
-                    image,
+                    display_image,
                     channels="RGB",
                     use_container_width=True
                 )
+
+            live_status_html = (
+                '<div class="med-card">'
+                '<div class="card-title">Frame Telemetry</div>'
+                f'<div class="small-muted">'
+                f'Frame <b>{frame_count:,}</b><br>'
+                f'Time <b>{frame_count / fps:.2f} s</b><br>'
+                f'Pose detected <b>{pose_detected_count:,}</b><br>'
+                f'Detection rate <b>{detection_rate_live:.1f}%</b>'
+                '</div>'
+                '</div>'
+            )
+
+            live_status.markdown(
+                live_status_html,
+                unsafe_allow_html=True
+            )
 
 
     # =====================================================
@@ -2657,9 +2977,16 @@ if uploaded_file is not None:
 
     else:
 
+        final_detection_rate = (
+            pose_detected_count
+            / max(frame_count, 1)
+            * 100.0
+        )
+
         st.success(
-            f"✅ วิเคราะห์เสร็จสิ้น "
-            f"ตรวจพบข้อมูลจำนวน {len(frames_data):,} เฟรม"
+            f"วิเคราะห์เสร็จสิ้น · "
+            f"ตรวจพบ pose {pose_detected_count:,}/{frame_count:,} เฟรม "
+            f"({final_detection_rate:.1f}%)"
         )
 
 
@@ -2716,7 +3043,7 @@ if uploaded_file is not None:
                 <div class="med-card">
                     <div class="card-title">Gait Analysis</div>
                     <div class="small-muted">
-                        ภาพโครงร่างจากเฟรมล่าสุดที่ระบบตรวจจับได้
+                        เฟรมล่าสุดพร้อมการติดตาม Hip / Knee / Ankle และค่ามุมซ้าย–ขวา
                     </div>
                 </div>
                 """,
@@ -2791,35 +3118,46 @@ if uploaded_file is not None:
                 f"score-status-{screening['level']}"
             )
 
-score_html = f"""<div class="med-card">
-<div class="card-title">Gait Screening Score</div>
-<div class="score-number">{screening['score']:.0f}<span class="score-unit">/100</span></div>
-<div class="screening-status {status_css_class}">{screening['status']}</div>
-<div class="score-caption">
-Curve MAE {curve_mae_caption} &nbsp;·&nbsp;
-ROM SI {screening['overall_rom_si']:.2f}% &nbsp;·&nbsp;
-Phase Difference {phase_mae_caption}
-</div>
-</div>
-<div class="model-strip">
-<div class="model-cell">
-<div class="model-weight">40%</div>
-<div class="model-label">Joint Curve</div>
-</div>
-<div class="model-cell">
-<div class="model-weight">35%</div>
-<div class="model-label">ROM Symmetry</div>
-</div>
-<div class="model-cell">
-<div class="model-weight">25%</div>
-<div class="model-label">Phase / Peak</div>
-</div>
-</div>"""
+            # สร้าง HTML โดยไม่เยื้องภายใน string
+            # เพื่อป้องกัน Streamlit Markdown ตีความเป็น code block
+            score_html = (
+                f'<div class="med-card">\n'
+                f'<div class="card-title">Gait Screening Score</div>\n'
+                f'<div class="score-number">'
+                f'{screening["score"]:.0f}'
+                f'<span class="score-unit">/100</span>'
+                f'</div>\n'
+                f'<div class="screening-status {status_css_class}">'
+                f'{screening["status"]}'
+                f'</div>\n'
+                f'<div class="score-caption">'
+                f'Curve MAE {curve_mae_caption} &nbsp;·&nbsp; '
+                f'ROM SI {screening["overall_rom_si"]:.2f}% &nbsp;·&nbsp; '
+                f'Phase Difference {phase_mae_caption}'
+                f'</div>\n'
+                f'</div>\n'
+                f'<div class="model-strip">\n'
+                f'<div class="model-cell">'
+                f'<div class="model-weight">40%</div>'
+                f'<div class="model-label">Joint Curve</div>'
+                f'</div>\n'
+                f'<div class="model-cell">'
+                f'<div class="model-weight">35%</div>'
+                f'<div class="model-label">ROM Symmetry</div>'
+                f'</div>\n'
+                f'<div class="model-cell">'
+                f'<div class="model-weight">25%</div>'
+                f'<div class="model-label">Phase / Peak</div>'
+                f'</div>\n'
+                f'</div>'
+            )
 
-st.markdown(
-    score_html,
-    unsafe_allow_html=True
-)
+            st.markdown(
+                score_html,
+                unsafe_allow_html=True
+            )
+
+            # Gauge ต้องอยู่ใน with center_col ระดับเดียวกับ st.markdown
             fig_gauge = go.Figure(
                 go.Indicator(
                     mode="gauge+number",
@@ -3175,7 +3513,7 @@ st.markdown(
             "ไม่ใช่ clinical diagnostic cut-off"
         )
 
-        m1, m2, m3, m4 = st.columns(4)
+        m1, m2, m3, m4, m5 = st.columns(5)
 
         with m1:
             if np.isfinite(
@@ -3199,14 +3537,20 @@ st.markdown(
 
         with m3:
             st.metric(
-                "Frames วิเคราะห์",
+                "Valid Pose Frames",
                 f"{len(df):,}"
             )
 
         with m4:
             st.metric(
-                "ระยะเวลาวิเคราะห์",
+                "Analyzed Duration",
                 f"{df['Time (s)'].max():.1f} s"
+            )
+
+        with m5:
+            st.metric(
+                "Pose Detection",
+                f"{final_detection_rate:.1f}%"
             )
 
 
@@ -3590,7 +3934,7 @@ st.markdown(
         else:
 
             st.warning(
-                "ยังตรวจพบ heel-strike ต่อเนื่องไม่เพียงพอ "
+                "ยังตรวจพบ estimated stride anchors ต่อเนื่องไม่เพียงพอ "
                 "จึงยังไม่สามารถสร้างกราฟ 0–100% gait cycle ได้"
             )
 
