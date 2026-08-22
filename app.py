@@ -1,5 +1,8 @@
 import os
 import tempfile
+import secrets
+import re
+from datetime import datetime, timezone
 from pathlib import Path
 
 import cv2
@@ -9,6 +12,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 import mediapipe as mp
+from supabase import Client, create_client
 
 
 # =========================================================
@@ -676,6 +680,78 @@ st.markdown(
     color: #A5F3FC !important;
     font-weight: 750 !important;
 }
+
+    /* --------------------------------------------------
+       User Center
+       -------------------------------------------------- */
+    .user-center-title {
+        color: #f8fbff;
+        font-size: 0.98rem;
+        font-weight: 820;
+        margin: 0.25rem 0 0.55rem;
+    }
+
+    .user-card {
+        padding: 14px;
+        margin: 7px 0 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(103, 232, 249, 0.16);
+        background:
+            linear-gradient(
+                145deg,
+                rgba(21, 61, 93, 0.78),
+                rgba(9, 31, 51, 0.88)
+            );
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.035);
+    }
+
+    .user-card-name {
+        color: #ffffff;
+        font-size: 15px;
+        font-weight: 800;
+        margin-bottom: 4px;
+    }
+
+    .user-card-meta {
+        color: #c7dbea;
+        font-size: 11px;
+        line-height: 1.6;
+        overflow-wrap: anywhere;
+    }
+
+    .user-chip {
+        display: inline-block;
+        margin-top: 8px;
+        padding: 5px 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(34, 211, 238, 0.20);
+        background: rgba(34, 211, 238, 0.07);
+        color: #a5f3fc;
+        font-size: 9px;
+        font-weight: 780;
+        letter-spacing: 0.45px;
+        text-transform: uppercase;
+    }
+
+    .account-note {
+        padding: 10px 11px;
+        margin: 6px 0 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(148, 197, 224, 0.11);
+        background: rgba(15, 48, 74, 0.45);
+        color: #c8dbea;
+        font-size: 10px;
+        line-height: 1.55;
+    }
+
+    [data-testid="stSidebar"] .stButton button {
+        min-height: 39px;
+        font-size: 11px;
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
     .stButton button,
     .stDownloadButton button {
         min-height: 45px;
@@ -2254,13 +2330,2261 @@ def calculate_gait_screening(
     }
 
 
+
 # =========================================================
-# 9. Sidebar - ข้อมูลประกอบการวิเคราะห์
+# 9. Production User Account / Settings / Support
+#    Backend: Supabase Auth + PostgreSQL + Row Level Security
 # =========================================================
+
+APP_VERSION = "1.0.0"
+
+DEFAULT_USER_SETTINGS = {
+    "default_direction": "เดินไปทางขวา →",
+    "show_live_tracking": True,
+    "show_angle_labels": True,
+    "min_landmark_visibility": 0.50,
+}
+
+
+def get_supabase_config():
+    """
+    อ่าน Supabase URL / key จาก Streamlit Secrets
+
+    รูปแบบ:
+        [supabase]
+        url = "https://xxxx.supabase.co"
+        key = "YOUR_PUBLISHABLE_OR_ANON_KEY"
+
+    ไม่ใช้ service_role key ในตัวแอปนี้
+    """
+
+    try:
+        config = st.secrets["supabase"]
+
+        url = str(
+            config["url"]
+        ).strip()
+
+        key = str(
+            config["key"]
+        ).strip()
+
+    except (
+        FileNotFoundError,
+        KeyError,
+        TypeError
+    ):
+        return None
+
+    if (
+        not url
+        or not key
+    ):
+        return None
+
+    return {
+        "url": url,
+        "key": key,
+    }
+
+
+def supabase_is_configured():
+    return (
+        get_supabase_config()
+        is not None
+    )
+
+
+def get_supabase_client():
+    """
+    สร้าง Supabase client แยกตาม Streamlit session
+
+    ห้ามใช้ @st.cache_resource กับ authenticated client
+    เพราะไม่ควรแชร์ auth session ระหว่างผู้ใช้หลายคน
+    """
+
+    config = get_supabase_config()
+
+    if config is None:
+        return None
+
+    session_key = (
+        "_derndul_supabase_client"
+    )
+
+    if (
+        session_key
+        not in st.session_state
+    ):
+
+        st.session_state[
+            session_key
+        ] = create_client(
+            config["url"],
+            config["key"]
+        )
+
+    return st.session_state[
+        session_key
+    ]
+
+
+def save_supabase_tokens(
+    session
+):
+    """
+    เก็บ access/refresh token เฉพาะ Streamlit session
+    ไม่เขียน token ลงไฟล์หรือฐานข้อมูล
+    """
+
+    if session is None:
+        return
+
+    st.session_state[
+        "_sb_access_token"
+    ] = session.access_token
+
+    st.session_state[
+        "_sb_refresh_token"
+    ] = session.refresh_token
+
+
+def clear_supabase_tokens():
+
+    for key in [
+        "_sb_access_token",
+        "_sb_refresh_token",
+    ]:
+        st.session_state.pop(
+            key,
+            None
+        )
+
+
+def restore_supabase_session():
+    """
+    คืนค่า Supabase auth session หลัง Streamlit rerun
+
+    set_session() จะ refresh token ให้เมื่อ access token หมดอายุ
+    """
+
+    client = get_supabase_client()
+
+    if client is None:
+        return None
+
+    # ถ้า client มี session อยู่แล้ว
+    try:
+
+        current_session = (
+            client.auth.get_session()
+        )
+
+        if current_session is not None:
+
+            save_supabase_tokens(
+                current_session
+            )
+
+            return current_session
+
+    except Exception:
+        pass
+
+    access_token = (
+        st.session_state.get(
+            "_sb_access_token"
+        )
+    )
+
+    refresh_token = (
+        st.session_state.get(
+            "_sb_refresh_token"
+        )
+    )
+
+    if (
+        not access_token
+        or not refresh_token
+    ):
+        return None
+
+    try:
+
+        response = (
+            client.auth.set_session(
+                access_token,
+                refresh_token
+            )
+        )
+
+        if response.session is None:
+
+            clear_supabase_tokens()
+
+            return None
+
+        save_supabase_tokens(
+            response.session
+        )
+
+        return response.session
+
+    except Exception:
+
+        clear_supabase_tokens()
+
+        return None
+
+
+def normalize_email(
+    email
+):
+    return email.strip().lower()
+
+
+def is_valid_email(
+    email
+):
+
+    email = normalize_email(
+        email
+    )
+
+    return bool(
+        re.fullmatch(
+            r"[^@\s]+@[^@\s]+\.[^@\s]+",
+            email
+        )
+    )
+
+
+def password_is_valid(
+    password
+):
+    """
+    Client-side minimum check.
+    Supabase Auth policy remains the authoritative password policy.
+    """
+
+    if len(password) < 8:
+        return False
+
+    has_letter = bool(
+        re.search(
+            r"[A-Za-zก-๙]",
+            password
+        )
+    )
+
+    has_number = bool(
+        re.search(
+            r"\d",
+            password
+        )
+    )
+
+    return (
+        has_letter
+        and has_number
+    )
+
+
+def safe_first_row(
+    response
+):
+    """
+    Supabase select response -> first dict or None
+    """
+
+    data = getattr(
+        response,
+        "data",
+        None
+    )
+
+    if (
+        isinstance(
+            data,
+            list
+        )
+        and len(
+            data
+        ) > 0
+    ):
+        return data[0]
+
+    return None
+
+
+def get_authenticated_supabase():
+    """
+    คืน (client, verified_user)
+
+    get_user() ตรวจ JWT กับ Supabase Auth server
+    ไม่เชื่อข้อมูล user จาก local session เพียงอย่างเดียว
+    """
+
+    client = get_supabase_client()
+
+    if client is None:
+        return (
+            None,
+            None
+        )
+
+    session = restore_supabase_session()
+
+    if session is None:
+        return (
+            client,
+            None
+        )
+
+    try:
+
+        response = (
+            client.auth.get_user()
+        )
+
+        user = getattr(
+            response,
+            "user",
+            None
+        )
+
+        return (
+            client,
+            user
+        )
+
+    except Exception:
+
+        clear_supabase_tokens()
+
+        return (
+            client,
+            None
+        )
+
+
+def get_profile_for_user(
+    client,
+    user
+):
+    """
+    โหลดข้อมูล profile จาก public.profiles ภายใต้ RLS
+    """
+
+    try:
+
+        response = (
+            client
+            .table(
+                "profiles"
+            )
+            .select(
+                "id, display_name, role, organization, created_at, updated_at"
+            )
+            .eq(
+                "id",
+                str(
+                    user.id
+                )
+            )
+            .limit(
+                1
+            )
+            .execute()
+        )
+
+        row = safe_first_row(
+            response
+        )
+
+    except Exception:
+        row = None
+
+    metadata = (
+        user.user_metadata
+        if isinstance(
+            user.user_metadata,
+            dict
+        )
+        else {}
+    )
+
+    if row is None:
+
+        fallback_name = (
+            metadata.get(
+                "display_name"
+            )
+            or (
+                user.email.split(
+                    "@"
+                )[0]
+                if user.email
+                else "DERNDUL User"
+            )
+        )
+
+        row = {
+            "id": str(
+                user.id
+            ),
+            "display_name":
+                fallback_name,
+            "role":
+                metadata.get(
+                    "role",
+                    "ผู้ใช้งานทั่วไป"
+                ),
+            "organization":
+                metadata.get(
+                    "organization",
+                    ""
+                ),
+            "created_at": None,
+            "updated_at": None,
+        }
+
+    return {
+        "id": str(
+            user.id
+        ),
+        "email": (
+            user.email
+            or ""
+        ),
+        "display_name": (
+            row.get(
+                "display_name"
+            )
+            or "DERNDUL User"
+        ),
+        "role": (
+            row.get(
+                "role"
+            )
+            or "ผู้ใช้งานทั่วไป"
+        ),
+        "organization": (
+            row.get(
+                "organization"
+            )
+            or ""
+        ),
+        "created_at":
+            row.get(
+                "created_at"
+            ),
+        "updated_at":
+            row.get(
+                "updated_at"
+            ),
+    }
+
+
+def get_current_user():
+
+    client, user = (
+        get_authenticated_supabase()
+    )
+
+    if (
+        client is None
+        or user is None
+    ):
+        return None
+
+    return get_profile_for_user(
+        client,
+        user
+    )
+
+
+def register_user(
+    display_name,
+    email,
+    password,
+    role,
+    organization
+):
+    """
+    สมัครสมาชิกด้วย Supabase Auth
+
+    profile/settings ถูกสร้างโดย PostgreSQL trigger
+    ใน supabase_schema.sql
+    """
+
+    client = get_supabase_client()
+
+    if client is None:
+
+        return (
+            False,
+            "ระบบบัญชียังไม่ได้ตั้งค่า Supabase",
+            "config"
+        )
+
+    display_name = (
+        display_name.strip()
+    )
+
+    email = normalize_email(
+        email
+    )
+
+    if len(
+        display_name
+    ) < 2:
+
+        return (
+            False,
+            "กรุณากรอกชื่อที่ใช้แสดงอย่างน้อย 2 ตัวอักษร",
+            "validation"
+        )
+
+    if not is_valid_email(
+        email
+    ):
+
+        return (
+            False,
+            "รูปแบบอีเมลไม่ถูกต้อง",
+            "validation"
+        )
+
+    if not password_is_valid(
+        password
+    ):
+
+        return (
+            False,
+            (
+                "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร "
+                "และมีทั้งตัวอักษรกับตัวเลข"
+            ),
+            "validation"
+        )
+
+    try:
+
+        response = (
+            client.auth.sign_up({
+                "email": email,
+                "password": password,
+                "options": {
+                    "data": {
+                        "display_name":
+                            display_name,
+                        "role":
+                            role,
+                        "organization":
+                            organization.strip(),
+                    }
+                }
+            })
+        )
+
+        if response.session is not None:
+
+            save_supabase_tokens(
+                response.session
+            )
+
+            return (
+                True,
+                "ลงทะเบียนและเข้าสู่ระบบสำเร็จ",
+                "signed_in"
+            )
+
+        if response.user is not None:
+
+            return (
+                True,
+                (
+                    "ลงทะเบียนสำเร็จ กรุณาตรวจอีเมลเพื่อยืนยันบัญชี "
+                    "แล้วกลับมาเข้าสู่ระบบ"
+                ),
+                "verify_email"
+            )
+
+        return (
+            False,
+            "ไม่สามารถสร้างบัญชีได้",
+            "auth"
+        )
+
+    except Exception:
+
+        return (
+            False,
+            (
+                "ลงทะเบียนไม่สำเร็จ "
+                "อีเมลอาจถูกใช้งานแล้ว หรือระบบ Auth ไม่พร้อม"
+            ),
+            "auth"
+        )
+
+
+def authenticate_user(
+    email,
+    password
+):
+
+    client = get_supabase_client()
+
+    if client is None:
+        return None
+
+    email = normalize_email(
+        email
+    )
+
+    try:
+
+        response = (
+            client.auth.sign_in_with_password({
+                "email": email,
+                "password": password,
+            })
+        )
+
+        if response.session is None:
+            return None
+
+        save_supabase_tokens(
+            response.session
+        )
+
+        user_response = (
+            client.auth.get_user()
+        )
+
+        user = getattr(
+            user_response,
+            "user",
+            None
+        )
+
+        if user is None:
+            return None
+
+        return get_profile_for_user(
+            client,
+            user
+        )
+
+    except Exception:
+        return None
+
+
+def update_user_profile(
+    user_id,
+    display_name,
+    role,
+    organization
+):
+
+    client, user = (
+        get_authenticated_supabase()
+    )
+
+    if (
+        client is None
+        or user is None
+    ):
+
+        return (
+            False,
+            "กรุณาเข้าสู่ระบบใหม่"
+        )
+
+    if str(
+        user.id
+    ) != str(
+        user_id
+    ):
+
+        return (
+            False,
+            "ไม่สามารถแก้ไขบัญชีนี้ได้"
+        )
+
+    display_name = (
+        display_name.strip()
+    )
+
+    if len(
+        display_name
+    ) < 2:
+
+        return (
+            False,
+            "ชื่อที่ใช้แสดงต้องมีอย่างน้อย 2 ตัวอักษร"
+        )
+
+    payload = {
+        "display_name":
+            display_name,
+        "role":
+            role,
+        "organization":
+            organization.strip(),
+    }
+
+    try:
+
+        response = (
+            client
+            .table(
+                "profiles"
+            )
+            .update(
+                payload
+            )
+            .eq(
+                "id",
+                str(
+                    user_id
+                )
+            )
+            .execute()
+        )
+
+        data = getattr(
+            response,
+            "data",
+            None
+        )
+
+        if not data:
+            return (
+                False,
+                "ไม่สามารถบันทึกข้อมูลบัญชีได้"
+            )
+
+        # ซิงก์ user_metadata ด้วย
+        try:
+
+            client.auth.update_user({
+                "data": {
+                    "display_name":
+                        display_name,
+                    "role":
+                        role,
+                    "organization":
+                        organization.strip(),
+                }
+            })
+
+        except Exception:
+            pass
+
+        return (
+            True,
+            "บันทึกข้อมูลบัญชีแล้ว"
+        )
+
+    except Exception:
+
+        return (
+            False,
+            "ไม่สามารถเชื่อมต่อฐานข้อมูลบัญชีได้"
+        )
+
+
+def change_user_password(
+    new_password
+):
+
+    client, user = (
+        get_authenticated_supabase()
+    )
+
+    if (
+        client is None
+        or user is None
+    ):
+
+        return (
+            False,
+            "กรุณาเข้าสู่ระบบใหม่"
+        )
+
+    if not password_is_valid(
+        new_password
+    ):
+
+        return (
+            False,
+            (
+                "รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร "
+                "และมีทั้งตัวอักษรกับตัวเลข"
+            )
+        )
+
+    try:
+
+        client.auth.update_user({
+            "password":
+                new_password
+        })
+
+        return (
+            True,
+            "เปลี่ยนรหัสผ่านแล้ว"
+        )
+
+    except Exception:
+
+        return (
+            False,
+            "ไม่สามารถเปลี่ยนรหัสผ่านได้"
+        )
+
+
+def load_user_settings(
+    user_id
+):
+
+    client, user = (
+        get_authenticated_supabase()
+    )
+
+    if (
+        client is None
+        or user is None
+        or str(
+            user.id
+        ) != str(
+            user_id
+        )
+    ):
+        return (
+            DEFAULT_USER_SETTINGS.copy()
+        )
+
+    try:
+
+        response = (
+            client
+            .table(
+                "user_settings"
+            )
+            .select(
+                (
+                    "default_direction, "
+                    "show_live_tracking, "
+                    "show_angle_labels, "
+                    "min_landmark_visibility"
+                )
+            )
+            .eq(
+                "user_id",
+                str(
+                    user_id
+                )
+            )
+            .limit(
+                1
+            )
+            .execute()
+        )
+
+        row = safe_first_row(
+            response
+        )
+
+    except Exception:
+        row = None
+
+    if row is None:
+        return (
+            DEFAULT_USER_SETTINGS.copy()
+        )
+
+    return {
+        "default_direction":
+            row.get(
+                "default_direction",
+                DEFAULT_USER_SETTINGS[
+                    "default_direction"
+                ]
+            ),
+
+        "show_live_tracking":
+            bool(
+                row.get(
+                    "show_live_tracking",
+                    True
+                )
+            ),
+
+        "show_angle_labels":
+            bool(
+                row.get(
+                    "show_angle_labels",
+                    True
+                )
+            ),
+
+        "min_landmark_visibility":
+            float(
+                row.get(
+                    "min_landmark_visibility",
+                    0.50
+                )
+            ),
+    }
+
+
+def save_user_settings(
+    user_id,
+    settings
+):
+
+    client, user = (
+        get_authenticated_supabase()
+    )
+
+    if (
+        client is None
+        or user is None
+        or str(
+            user.id
+        ) != str(
+            user_id
+        )
+    ):
+        return False
+
+    payload = {
+        "default_direction":
+            settings[
+                "default_direction"
+            ],
+
+        "show_live_tracking":
+            bool(
+                settings[
+                    "show_live_tracking"
+                ]
+            ),
+
+        "show_angle_labels":
+            bool(
+                settings[
+                    "show_angle_labels"
+                ]
+            ),
+
+        "min_landmark_visibility":
+            float(
+                settings[
+                    "min_landmark_visibility"
+                ]
+            ),
+    }
+
+    try:
+
+        response = (
+            client
+            .table(
+                "user_settings"
+            )
+            .update(
+                payload
+            )
+            .eq(
+                "user_id",
+                str(
+                    user_id
+                )
+            )
+            .execute()
+        )
+
+        data = getattr(
+            response,
+            "data",
+            None
+        )
+
+        if data:
+            return True
+
+        # fallback กรณี trigger row ยังไม่ถูกสร้าง
+        payload[
+            "user_id"
+        ] = str(
+            user_id
+        )
+
+        client.table(
+            "user_settings"
+        ).insert(
+            payload
+        ).execute()
+
+        return True
+
+    except Exception:
+        return False
+
+
+def create_issue_report(
+    user_id,
+    contact_email,
+    category,
+    severity,
+    subject,
+    details
+):
+    """
+    Production mode:
+    แจ้งปัญหาต้องเป็น authenticated user
+    เพื่อลด spam และให้ RLS ป้องกันข้อมูลรายงาน
+    """
+
+    client, user = (
+        get_authenticated_supabase()
+    )
+
+    if (
+        client is None
+        or user is None
+    ):
+        return None
+
+    if str(
+        user.id
+    ) != str(
+        user_id
+    ):
+        return None
+
+    report_code = (
+        "ISS-"
+        + datetime.now(
+            timezone.utc
+        ).strftime(
+            "%Y%m%d"
+        )
+        + "-"
+        + secrets.token_hex(
+            3
+        ).upper()
+    )
+
+    payload = {
+        "report_code":
+            report_code,
+
+        "user_id":
+            str(
+                user.id
+            ),
+
+        "contact_email":
+            normalize_email(
+                contact_email
+            )
+            if contact_email
+            else "",
+
+        "category":
+            category,
+
+        "severity":
+            severity,
+
+        "subject":
+            subject.strip(),
+
+        "details":
+            details.strip(),
+
+        "app_version":
+            APP_VERSION,
+    }
+
+    try:
+
+        response = (
+            client
+            .table(
+                "issue_reports"
+            )
+            .insert(
+                payload
+            )
+            .execute()
+        )
+
+        if getattr(
+            response,
+            "data",
+            None
+        ):
+            return report_code
+
+        return None
+
+    except Exception:
+        return None
+
+
+def get_recent_user_reports(
+    user_id,
+    limit=5
+):
+
+    client, user = (
+        get_authenticated_supabase()
+    )
+
+    if (
+        client is None
+        or user is None
+        or str(
+            user.id
+        ) != str(
+            user_id
+        )
+    ):
+        return []
+
+    try:
+
+        response = (
+            client
+            .table(
+                "issue_reports"
+            )
+            .select(
+                (
+                    "report_code, category, severity, "
+                    "subject, status, created_at"
+                )
+            )
+            .eq(
+                "user_id",
+                str(
+                    user_id
+                )
+            )
+            .order(
+                "created_at",
+                desc=True
+            )
+            .limit(
+                int(
+                    limit
+                )
+            )
+            .execute()
+        )
+
+        data = getattr(
+            response,
+            "data",
+            None
+        )
+
+        return (
+            data
+            if isinstance(
+                data,
+                list
+            )
+            else []
+        )
+
+    except Exception:
+        return []
+
+
+def apply_preferences_to_gait_widgets(
+    settings
+):
+
+    st.session_state[
+        "gait_walking_direction"
+    ] = settings[
+        "default_direction"
+    ]
+
+    st.session_state[
+        "gait_show_live_tracking"
+    ] = bool(
+        settings[
+            "show_live_tracking"
+        ]
+    )
+
+    st.session_state[
+        "gait_show_angle_labels"
+    ] = bool(
+        settings[
+            "show_angle_labels"
+        ]
+    )
+
+    st.session_state[
+        "gait_min_landmark_visibility"
+    ] = float(
+        settings[
+            "min_landmark_visibility"
+        ]
+    )
+
+
+def set_authenticated_user(
+    user
+):
+
+    st.session_state[
+        "user_center_panel"
+    ] = "account"
+
+    settings = load_user_settings(
+        user[
+            "id"
+        ]
+    )
+
+    apply_preferences_to_gait_widgets(
+        settings
+    )
+
+
+def clear_authenticated_user():
+
+    client = get_supabase_client()
+
+    if client is not None:
+
+        try:
+
+            # local scope = ออกจาก session นี้
+            # ไม่บังคับ logout อุปกรณ์อื่นของผู้ใช้
+            client.auth.sign_out({
+                "scope": "local"
+            })
+
+        except Exception:
+            pass
+
+    clear_supabase_tokens()
+
+    st.session_state.pop(
+        "_derndul_supabase_client",
+        None
+    )
+
+    st.session_state[
+        "user_center_panel"
+    ] = "account"
+
+    apply_preferences_to_gait_widgets(
+        DEFAULT_USER_SETTINGS
+    )
+
+
+def ensure_session_defaults():
+
+    st.session_state.setdefault(
+        "user_center_panel",
+        "none"
+    )
+
+    st.session_state.setdefault(
+        "guest_settings",
+        DEFAULT_USER_SETTINGS.copy()
+    )
+
+    current_user = get_current_user()
+
+    effective_settings = (
+        load_user_settings(
+            current_user[
+                "id"
+            ]
+        )
+        if current_user is not None
+        else st.session_state[
+            "guest_settings"
+        ]
+    )
+
+    widget_defaults = {
+        "gait_walking_direction":
+            effective_settings[
+                "default_direction"
+            ],
+
+        "gait_show_live_tracking":
+            bool(
+                effective_settings[
+                    "show_live_tracking"
+                ]
+            ),
+
+        "gait_show_angle_labels":
+            bool(
+                effective_settings[
+                    "show_angle_labels"
+                ]
+            ),
+
+        "gait_min_landmark_visibility":
+            float(
+                effective_settings[
+                    "min_landmark_visibility"
+                ]
+            ),
+    }
+
+    for key, value in (
+        widget_defaults.items()
+    ):
+
+        if key not in st.session_state:
+
+            st.session_state[
+                key
+            ] = value
+
+
+def render_account_panel(
+    current_user
+):
+
+    st.markdown(
+        "#### บัญชีผู้ใช้"
+    )
+
+    if not supabase_is_configured():
+
+        st.error(
+            "ยังไม่ได้ตั้งค่า Supabase Secrets "
+            "ระบบวิเคราะห์การเดินยังใช้งานได้ "
+            "แต่บัญชีผู้ใช้ยังไม่พร้อม"
+        )
+
+        return
+
+    if current_user is None:
+
+        login_tab, register_tab = (
+            st.tabs([
+                "เข้าสู่ระบบ",
+                "ลงทะเบียน"
+            ])
+        )
+
+        with login_tab:
+
+            with st.form(
+                "login_form",
+                clear_on_submit=False
+            ):
+
+                login_email = (
+                    st.text_input(
+                        "อีเมล",
+                        key="login_email"
+                    )
+                )
+
+                login_password = (
+                    st.text_input(
+                        "รหัสผ่าน",
+                        type="password",
+                        key="login_password"
+                    )
+                )
+
+                login_submit = (
+                    st.form_submit_button(
+                        "เข้าสู่ระบบ",
+                        use_container_width=True
+                    )
+                )
+
+            if login_submit:
+
+                if not is_valid_email(
+                    login_email
+                ):
+
+                    st.error(
+                        "รูปแบบอีเมลไม่ถูกต้อง"
+                    )
+
+                else:
+
+                    user = (
+                        authenticate_user(
+                            login_email,
+                            login_password
+                        )
+                    )
+
+                    if user is None:
+
+                        st.error(
+                            "เข้าสู่ระบบไม่สำเร็จ "
+                            "กรุณาตรวจอีเมล รหัสผ่าน "
+                            "และสถานะการยืนยันอีเมล"
+                        )
+
+                    else:
+
+                        set_authenticated_user(
+                            user
+                        )
+
+                        st.success(
+                            "เข้าสู่ระบบสำเร็จ"
+                        )
+
+                        st.rerun()
+
+        with register_tab:
+
+            with st.form(
+                "register_form",
+                clear_on_submit=False
+            ):
+
+                reg_display_name = (
+                    st.text_input(
+                        "ชื่อที่ใช้แสดง *",
+                        key="reg_display_name"
+                    )
+                )
+
+                reg_email = (
+                    st.text_input(
+                        "อีเมล *",
+                        key="reg_email"
+                    )
+                )
+
+                reg_role = st.selectbox(
+                    "บทบาท",
+                    [
+                        "ผู้ใช้งานทั่วไป",
+                        "นักกายภาพบำบัด",
+                        "นักกายอุปกรณ์",
+                        "แพทย์/บุคลากรทางการแพทย์",
+                        "นักวิจัย/นักศึกษา",
+                        "อื่น ๆ"
+                    ],
+                    key="reg_role"
+                )
+
+                reg_organization = (
+                    st.text_input(
+                        "หน่วยงาน (ไม่บังคับ)",
+                        key="reg_organization"
+                    )
+                )
+
+                reg_password = (
+                    st.text_input(
+                        "รหัสผ่าน *",
+                        type="password",
+                        help=(
+                            "อย่างน้อย 8 ตัวอักษร "
+                            "และมีทั้งตัวอักษรกับตัวเลข"
+                        ),
+                        key="reg_password"
+                    )
+                )
+
+                reg_confirm = (
+                    st.text_input(
+                        "ยืนยันรหัสผ่าน *",
+                        type="password",
+                        key="reg_confirm"
+                    )
+                )
+
+                acknowledge = (
+                    st.checkbox(
+                        (
+                            "ฉันเข้าใจว่าระบบนี้ใช้เพื่อการคัดกรอง/การศึกษา "
+                            "และไม่ใช่เครื่องมือวินิจฉัยโรค"
+                        ),
+                        key="reg_acknowledge"
+                    )
+                )
+
+                privacy_ack = (
+                    st.checkbox(
+                        (
+                            "ฉันยินยอมให้เก็บข้อมูลบัญชี การตั้งค่า "
+                            "และรายงานปัญหาเพื่อให้บริการระบบ"
+                        ),
+                        key="reg_privacy_ack"
+                    )
+                )
+
+                register_submit = (
+                    st.form_submit_button(
+                        "สร้างบัญชี",
+                        use_container_width=True
+                    )
+                )
+
+            if register_submit:
+
+                if (
+                    reg_password
+                    != reg_confirm
+                ):
+
+                    st.error(
+                        "รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน"
+                    )
+
+                elif not acknowledge:
+
+                    st.error(
+                        "กรุณายืนยันข้อจำกัดของระบบ"
+                    )
+
+                elif not privacy_ack:
+
+                    st.error(
+                        "กรุณายืนยันการจัดเก็บข้อมูลบัญชี"
+                    )
+
+                else:
+
+                    ok, message, state = (
+                        register_user(
+                            reg_display_name,
+                            reg_email,
+                            reg_password,
+                            reg_role,
+                            reg_organization
+                        )
+                    )
+
+                    if not ok:
+
+                        st.error(
+                            message
+                        )
+
+                    elif (
+                        state
+                        == "signed_in"
+                    ):
+
+                        st.success(
+                            message
+                        )
+
+                        st.rerun()
+
+                    else:
+
+                        st.success(
+                            message
+                        )
+
+        st.markdown(
+            '<div class="account-note">'
+            'Authentication ใช้ Supabase Auth; '
+            'แอปไม่เก็บ plaintext password และไม่บันทึกวิดีโอ '
+            'ลงฐานข้อมูลบัญชีโดยอัตโนมัติ'
+            '</div>',
+            unsafe_allow_html=True
+        )
+
+        return
+
+    profile_html = (
+        '<div class="user-card">'
+        f'<div class="user-card-name">'
+        f'{current_user["display_name"]}'
+        '</div>'
+        f'<div class="user-card-meta">'
+        f'{current_user["email"]}<br>'
+        f'{current_user["role"]}'
+        + (
+            f'<br>{current_user["organization"]}'
+            if current_user[
+                "organization"
+            ]
+            else ""
+        )
+        + '</div>'
+        '<span class="user-chip">'
+        'SUPABASE AUTH'
+        '</span>'
+        '</div>'
+    )
+
+    st.markdown(
+        profile_html,
+        unsafe_allow_html=True
+    )
+
+    with st.form(
+        "profile_form"
+    ):
+
+        profile_name = (
+            st.text_input(
+                "ชื่อที่ใช้แสดง",
+                value=current_user[
+                    "display_name"
+                ]
+            )
+        )
+
+        role_options = [
+            "ผู้ใช้งานทั่วไป",
+            "นักกายภาพบำบัด",
+            "นักกายอุปกรณ์",
+            "แพทย์/บุคลากรทางการแพทย์",
+            "นักวิจัย/นักศึกษา",
+            "อื่น ๆ"
+        ]
+
+        try:
+
+            role_index = (
+                role_options.index(
+                    current_user[
+                        "role"
+                    ]
+                )
+            )
+
+        except ValueError:
+
+            role_index = 0
+
+        profile_role = (
+            st.selectbox(
+                "บทบาท",
+                role_options,
+                index=role_index
+            )
+        )
+
+        profile_org = (
+            st.text_input(
+                "หน่วยงาน",
+                value=current_user[
+                    "organization"
+                ]
+            )
+        )
+
+        profile_submit = (
+            st.form_submit_button(
+                "บันทึกข้อมูลบัญชี",
+                use_container_width=True
+            )
+        )
+
+    if profile_submit:
+
+        ok, message = (
+            update_user_profile(
+                current_user["id"],
+                profile_name,
+                profile_role,
+                profile_org
+            )
+        )
+
+        if ok:
+
+            st.success(
+                message
+            )
+
+            st.rerun()
+
+        else:
+
+            st.error(
+                message
+            )
+
+    with st.expander(
+        "เปลี่ยนรหัสผ่าน"
+    ):
+
+        with st.form(
+            "change_password_form"
+        ):
+
+            new_password = (
+                st.text_input(
+                    "รหัสผ่านใหม่",
+                    type="password"
+                )
+            )
+
+            confirm_password = (
+                st.text_input(
+                    "ยืนยันรหัสผ่านใหม่",
+                    type="password"
+                )
+            )
+
+            change_password_submit = (
+                st.form_submit_button(
+                    "เปลี่ยนรหัสผ่าน",
+                    use_container_width=True
+                )
+            )
+
+        if change_password_submit:
+
+            if (
+                new_password
+                != confirm_password
+            ):
+
+                st.error(
+                    "รหัสผ่านใหม่ไม่ตรงกัน"
+                )
+
+            else:
+
+                ok, message = (
+                    change_user_password(
+                        new_password
+                    )
+                )
+
+                if ok:
+
+                    st.success(
+                        message
+                    )
+
+                else:
+
+                    st.error(
+                        message
+                    )
+
+    if st.button(
+        "ออกจากระบบ",
+        key="logout_button",
+        use_container_width=True
+    ):
+
+        clear_authenticated_user()
+
+        st.rerun()
+
+
+def render_settings_panel(
+    current_user
+):
+
+    st.markdown(
+        "#### การตั้งค่า"
+    )
+
+    if current_user is not None:
+
+        settings = (
+            load_user_settings(
+                current_user[
+                    "id"
+                ]
+            )
+        )
+
+        st.caption(
+            "ค่าที่บันทึกจะถูกเก็บในบัญชี Supabase และใช้เป็นค่าเริ่มต้น"
+        )
+
+    else:
+
+        settings = dict(
+            st.session_state[
+                "guest_settings"
+            ]
+        )
+
+        st.info(
+            "Guest mode: "
+            "ค่าที่เปลี่ยนจะอยู่เฉพาะ session นี้"
+        )
+
+    with st.form(
+        "settings_form"
+    ):
+
+        direction_options = [
+            "เดินไปทางขวา →",
+            "← เดินไปทางซ้าย"
+        ]
+
+        direction_index = (
+            0
+            if settings[
+                "default_direction"
+            ]
+            == direction_options[0]
+            else 1
+        )
+
+        pref_direction = (
+            st.selectbox(
+                "ทิศทางเดินเริ่มต้น",
+                direction_options,
+                index=direction_index
+            )
+        )
+
+        pref_live = (
+            st.checkbox(
+                "เปิด Live Joint Tracking",
+                value=settings[
+                    "show_live_tracking"
+                ]
+            )
+        )
+
+        pref_labels = (
+            st.checkbox(
+                "แสดงค่ามุมบนภาพ",
+                value=settings[
+                    "show_angle_labels"
+                ]
+            )
+        )
+
+        pref_visibility = (
+            st.slider(
+                "Landmark visibility เริ่มต้น",
+                min_value=0.30,
+                max_value=0.90,
+                value=float(
+                    settings[
+                        "min_landmark_visibility"
+                    ]
+                ),
+                step=0.05
+            )
+        )
+
+        settings_submit = (
+            st.form_submit_button(
+                "บันทึกการตั้งค่า",
+                use_container_width=True
+            )
+        )
+
+    if settings_submit:
+
+        new_settings = {
+            "default_direction":
+                pref_direction,
+
+            "show_live_tracking":
+                pref_live,
+
+            "show_angle_labels":
+                pref_labels,
+
+            "min_landmark_visibility":
+                float(
+                    pref_visibility
+                ),
+        }
+
+        saved = True
+
+        if current_user is not None:
+
+            saved = (
+                save_user_settings(
+                    current_user[
+                        "id"
+                    ],
+                    new_settings
+                )
+            )
+
+        else:
+
+            st.session_state[
+                "guest_settings"
+            ] = new_settings
+
+        if not saved:
+
+            st.error(
+                "ไม่สามารถบันทึกการตั้งค่าไปยังฐานข้อมูลได้"
+            )
+
+        else:
+
+            apply_preferences_to_gait_widgets(
+                new_settings
+            )
+
+            st.success(
+                "บันทึกการตั้งค่าแล้ว"
+            )
+
+            st.rerun()
+
+
+def render_support_panel(
+    current_user
+):
+
+    st.markdown(
+        "#### แจ้งปัญหา"
+    )
+
+    if not supabase_is_configured():
+
+        st.error(
+            "ระบบแจ้งปัญหายังไม่พร้อม "
+            "กรุณาตั้งค่า Supabase ก่อน"
+        )
+
+        return
+
+    if current_user is None:
+
+        st.info(
+            "กรุณาเข้าสู่ระบบก่อนส่งรายงานปัญหา "
+            "เพื่อป้องกัน spam และรักษาความเป็นส่วนตัวของรายงาน"
+        )
+
+        return
+
+    default_email = (
+        current_user[
+            "email"
+        ]
+    )
+
+    with st.form(
+        "issue_report_form",
+        clear_on_submit=True
+    ):
+
+        contact_email = (
+            st.text_input(
+                "อีเมลสำหรับติดต่อกลับ",
+                value=default_email
+            )
+        )
+
+        category = st.selectbox(
+            "ประเภทปัญหา",
+            [
+                "การอัปโหลดวิดีโอ",
+                "การตรวจจับข้อต่อ",
+                "Gait Cycle / Score",
+                "บัญชีผู้ใช้",
+                "การแสดงผล UI",
+                "ข้อเสนอแนะ",
+                "อื่น ๆ"
+            ]
+        )
+
+        severity = st.selectbox(
+            "ระดับความเร่งด่วน",
+            [
+                "ทั่วไป",
+                "กระทบการใช้งานบางส่วน",
+                "ใช้งานฟังก์ชันหลักไม่ได้"
+            ]
+        )
+
+        subject = (
+            st.text_input(
+                "หัวข้อปัญหา *",
+                max_chars=120
+            )
+        )
+
+        details = (
+            st.text_area(
+                "รายละเอียด *",
+                height=140,
+                help=(
+                    "ระบุขั้นตอนก่อนเกิดปัญหา "
+                    "และข้อความ error ถ้ามี "
+                    "หลีกเลี่ยงการใส่ข้อมูลสุขภาพที่ไม่จำเป็น"
+                )
+            )
+        )
+
+        report_submit = (
+            st.form_submit_button(
+                "ส่งรายงานปัญหา",
+                use_container_width=True
+            )
+        )
+
+    if report_submit:
+
+        if not is_valid_email(
+            contact_email
+        ):
+
+            st.error(
+                "รูปแบบอีเมลสำหรับติดต่อกลับไม่ถูกต้อง"
+            )
+
+        elif len(
+            subject.strip()
+        ) < 3:
+
+            st.error(
+                "กรุณาระบุหัวข้อปัญหา"
+            )
+
+        elif len(
+            details.strip()
+        ) < 10:
+
+            st.error(
+                "กรุณาอธิบายรายละเอียดอย่างน้อย 10 ตัวอักษร"
+            )
+
+        else:
+
+            report_code = (
+                create_issue_report(
+                    current_user[
+                        "id"
+                    ],
+                    contact_email,
+                    category,
+                    severity,
+                    subject,
+                    details
+                )
+            )
+
+            if report_code is None:
+
+                st.error(
+                    "ไม่สามารถส่งรายงานปัญหาได้ กรุณาลองใหม่"
+                )
+
+            else:
+
+                st.success(
+                    "รับรายงานแล้ว "
+                    f"หมายเลข {report_code}"
+                )
+
+    recent_reports = (
+        get_recent_user_reports(
+            current_user[
+                "id"
+            ],
+            limit=5
+        )
+    )
+
+    if recent_reports:
+
+        st.caption(
+            "รายงานล่าสุดของคุณ"
+        )
+
+        report_df = pd.DataFrame(
+            [
+                {
+                    "Report ID":
+                        row.get(
+                            "report_code",
+                            ""
+                        ),
+
+                    "ประเภท":
+                        row.get(
+                            "category",
+                            ""
+                        ),
+
+                    "ความเร่งด่วน":
+                        row.get(
+                            "severity",
+                            ""
+                        ),
+
+                    "สถานะ":
+                        row.get(
+                            "status",
+                            ""
+                        ),
+                }
+                for row
+                in recent_reports
+            ]
+        )
+
+        st.dataframe(
+            report_df,
+            use_container_width=True,
+            hide_index=True
+        )
+
+
+ensure_session_defaults()
+
+
+# =========================================================
+# 10. Sidebar - User Center + ข้อมูลประกอบการวิเคราะห์
+# =========================================================
+
+current_user = get_current_user()
 
 with st.sidebar:
 
-    st.markdown("## 🦶 Gait Analysis")
+    # -----------------------------------------------------
+    # User Center
+    # -----------------------------------------------------
+
+    st.markdown(
+        '<div class="user-center-title">'
+        'User Center'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+    if current_user is not None:
+
+        signed_in_html = (
+            '<div class="user-card">'
+            f'<div class="user-card-name">'
+            f'{current_user["display_name"]}'
+            '</div>'
+            f'<div class="user-card-meta">'
+            f'{current_user["email"]}'
+            '</div>'
+            '<span class="user-chip">'
+            'SUPABASE AUTH'
+            '</span>'
+            '</div>'
+        )
+
+        st.markdown(
+            signed_in_html,
+            unsafe_allow_html=True
+        )
+
+    else:
+
+        st.caption(
+            "ใช้งานแบบ Guest · "
+            "ลงทะเบียนเพื่อบันทึกการตั้งค่า"
+        )
+
+    menu_c1, menu_c2 = st.columns(2)
+
+    with menu_c1:
+
+        if st.button(
+            "👤 บัญชี",
+            key="open_account_panel",
+            use_container_width=True
+        ):
+
+            st.session_state[
+                "user_center_panel"
+            ] = "account"
+
+    with menu_c2:
+
+        if st.button(
+            "⚙️ ตั้งค่า",
+            key="open_settings_panel",
+            use_container_width=True
+        ):
+
+            st.session_state[
+                "user_center_panel"
+            ] = "settings"
+
+    if st.button(
+        "🛠️ แจ้งปัญหา / ข้อเสนอแนะ",
+        key="open_support_panel",
+        use_container_width=True
+    ):
+
+        st.session_state[
+            "user_center_panel"
+        ] = "support"
+
+    active_panel = st.session_state.get(
+        "user_center_panel",
+        "none"
+    )
+
+    if active_panel != "none":
+
+        close_panel = st.button(
+            "ปิดเมนูผู้ใช้",
+            key="close_user_panel",
+            use_container_width=True
+        )
+
+        if close_panel:
+
+            st.session_state[
+                "user_center_panel"
+            ] = "none"
+
+            st.rerun()
+
+        if active_panel == "account":
+
+            render_account_panel(
+                current_user
+            )
+
+        elif active_panel == "settings":
+
+            render_settings_panel(
+                current_user
+            )
+
+        elif active_panel == "support":
+
+            render_support_panel(
+                current_user
+            )
+
+    st.divider()
+
+    # -----------------------------------------------------
+    # Existing Gait Analysis Controls
+    # -----------------------------------------------------
+
+    st.markdown(
+        "## 🦶 Gait Analysis"
+    )
 
     st.markdown(
         """
@@ -2311,6 +4635,7 @@ with st.sidebar:
             "เดินไปทางขวา →",
             "← เดินไปทางซ้าย"
         ],
+        key="gait_walking_direction",
         help=(
             "ใช้เพื่อกำหนดเครื่องหมาย hip flexion/extension "
             "และตำแหน่งส้นเท้าด้านหน้า"
@@ -2326,11 +4651,13 @@ with st.sidebar:
 
     st.divider()
 
-    st.markdown("### Live Joint Tracking")
+    st.markdown(
+        "### Live Joint Tracking"
+    )
 
     show_live_tracking = st.checkbox(
         "แสดงภาพการจับข้อต่อทุกเฟรม",
-        value=True,
+        key="gait_show_live_tracking",
         help=(
             "อัปเดตภาพ Hip / Knee / Ankle ในทุกเฟรมที่ประมวลผล "
             "การเปิดใช้งานอาจทำให้วิดีโอยาวประมวลผลช้าลงเล็กน้อย"
@@ -2339,21 +4666,26 @@ with st.sidebar:
 
     show_angle_labels = st.checkbox(
         "แสดงค่ามุมบนภาพ",
-        value=True
+        key="gait_show_angle_labels"
     )
 
     min_landmark_visibility = st.slider(
         "Landmark visibility ขั้นต่ำ",
         min_value=0.30,
         max_value=0.90,
-        value=0.50,
         step=0.05,
-        help="จุดที่มี visibility ต่ำกว่าค่านี้จะไม่ถูกวาดบนภาพ"
+        key="gait_min_landmark_visibility",
+        help=(
+            "จุดที่มี visibility ต่ำกว่าค่านี้ "
+            "จะไม่ถูกวาดบนภาพ"
+        )
     )
 
     st.divider()
 
-    st.markdown("### ⚠️ ข้อควรทราบ")
+    st.markdown(
+        "### ⚠️ ข้อควรทราบ"
+    )
 
     st.caption(
         "ระบบนี้เป็น markerless 2D video analysis "
@@ -2361,9 +4693,13 @@ with st.sidebar:
         "3D motion capture และ force plate"
     )
 
+    st.caption(
+        f"App version {APP_VERSION}"
+    )
+
 
 # =========================================================
-# 10. อัปโหลดวิดีโอ
+# 11. อัปโหลดวิดีโอ
 # =========================================================
 
 st.markdown(
@@ -2391,7 +4727,7 @@ uploaded_file = st.file_uploader(
 
 
 # =========================================================
-# 11. เริ่มวิเคราะห์
+# 12. เริ่มวิเคราะห์
 # =========================================================
 
 if uploaded_file is not None:
@@ -4534,6 +6870,9 @@ if uploaded_file is not None:
             ระบบนี้จัดทำขึ้นเพื่อการศึกษาและการคัดกรองเบื้องต้น
             ผลลัพธ์ควรพิจารณาร่วมกับการสังเกตทางคลินิก
             และการประเมินโดยผู้เชี่ยวชาญเมื่อจำเป็น
+
+            บัญชีผู้ใช้ในเวอร์ชันใช้งานจริงใช้ Supabase Auth และ PostgreSQL พร้อม Row Level Security
+            ข้อมูลบัญชีและการตั้งค่าถูกจัดเก็บแบบ persistent ที่ backend และแยกสิทธิ์ตามผู้ใช้
 
             </div>
             """,
