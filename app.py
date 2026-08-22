@@ -23,7 +23,7 @@ mp_pose = mp.solutions.pose
 # =========================================================
 
 st.set_page_config(
-    page_title="Medical Gait AI | Gait Screening",
+    page_title="เดินดุล",
     page_icon="🩺",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -744,11 +744,8 @@ st.markdown(
                 for Clinical Screening
             </div>
             <div class="hero-copy">
-                วิเคราะห์การเดินจากวิดีโอด้านข้างด้วย 2D pose estimation
-                พร้อมสร้าง normalized gait cycle 0–100%,
-                คำนวณ Hip / Knee / Ankle kinematics,
-                Curve MAE, ROM Symmetry และ Phase-based metrics
-                เพื่อช่วยคัดกรองและติดตามความเปลี่ยนแปลงอย่างเป็นระบบ
+                ระบบวิเคราะห์รูปแบบการเดินและความสมมาตรด้วย AI
+                เห็นทุกการเคลื่อนไหว เข้าใจทุกก้าวที่เดิน
             </div>
     </div>
     """,
