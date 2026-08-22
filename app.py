@@ -721,27 +721,11 @@ st.markdown(
 
 st.markdown(
     """
-    <div class="top-nav">
-        <div class="brand-wrap">
-            <div class="brand-mark">AI</div>
-            <div>
-                <div class="brand">Medical Gait AI</div>
-                <div class="brand-sub">Markerless Gait Screening Platform</div>
-            </div>
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    """
     <div class="hero-panel">
         <div class="hero-main">
             <div class="hero-kicker">AI-Assisted Movement Analytics</div>
             <div class="hero-title">
-                Video Gait Analysis<br>
-                for Clinical Screening
+                เดินดุล DERNDUL
             </div>
             <div class="hero-copy">
                 ระบบวิเคราะห์รูปแบบการเดินและความสมมาตรด้วย AI
