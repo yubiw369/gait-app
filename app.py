@@ -23,7 +23,7 @@ mp_pose = mp.solutions.pose
 # =========================================================
 
 st.set_page_config(
-    page_title="เดินดุล",
+    page_title="เดินดุล DERNDUL",
     page_icon="🩺",
     layout="wide",
     initial_sidebar_state="collapsed"
