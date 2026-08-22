@@ -581,17 +581,35 @@ st.markdown(
         font-weight: 820;
     }
 
-    [data-testid="stFileUploader"] {
-        padding: 12px;
-        border-radius: 16px;
-        border: 1px dashed rgba(34, 211, 238, 0.40);
-        background: rgba(18, 55, 84, 0.62);
-    }
+[data-testid="stFileUploader"] {
+    padding: 12px;
+    border-radius: 16px;
+    border: 1px dashed rgba(34, 211, 238, 0.40);
+    background: rgba(18, 55, 84, 0.62);
+}
 
-    [data-testid="stFileUploader"] section {
-        border-radius: 12px;
-        background: rgba(13, 42, 66, 0.70);
-    }
+/* คำว่า "เลือกคลิปวิดีโอการเดิน" */
+[data-testid="stFileUploader"] label,
+[data-testid="stFileUploader"] label p {
+    color: #F0F9FF !important;
+    font-weight: 750 !important;
+    font-size: 15px !important;
+}
+
+/* ข้อความภายในกล่องอัปโหลด */
+[data-testid="stFileUploader"] section p {
+    color: #E2EEF7 !important;
+}
+
+/* ข้อความรายละเอียดชนิดไฟล์/ขนาดไฟล์ */
+[data-testid="stFileUploader"] small {
+    color: #B8D4E8 !important;
+}
+
+[data-testid="stFileUploader"] section {
+    border-radius: 12px;
+    background: rgba(13, 42, 66, 0.70);
+}
 
     [data-testid="stAlert"] {
         border-radius: 13px;
