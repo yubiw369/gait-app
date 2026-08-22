@@ -631,7 +631,33 @@ st.markdown(
             );
         border-right: 1px solid rgba(125, 211, 252, 0.10);
     }
+/* หัวข้อใหญ่ เช่น Gait Analysis */
+[data-testid="stSidebar"] h2 {
+    color: #FFFFFF !important;
+    font-weight: 800 !important;
+}
 
+/* หัวข้อย่อย เช่น ข้อมูลประกอบรายงาน */
+[data-testid="stSidebar"] h3 {
+    color: #A5F3FC !important;
+    font-weight: 750 !important;
+}
+
+/* ข้อความทั่วไป */
+[data-testid="stSidebar"] p {
+    color: #E2EEF7 !important;
+}
+
+/* รายการ bullet */
+[data-testid="stSidebar"] li {
+    color: #E2EEF7 !important;
+}
+
+/* ข้อความตัวหนา เช่น "รูปแบบวิดีโอที่แนะนำ" */
+[data-testid="stSidebar"] strong {
+    color: #A5F3FC !important;
+    font-weight: 750 !important;
+}
     .stButton button,
     .stDownloadButton button {
         min-height: 45px;
